@@ -5,4 +5,5 @@ idf_component_register(
     util_i2c
     sens_aht21
     sens_ens160
+    sens_bme280
     )
