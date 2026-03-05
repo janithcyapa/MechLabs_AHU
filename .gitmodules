@@ -1,0 +1,3 @@
+[submodule "AHU_Firmware/components/ESP-IDF-Component-Kit"]
+	path = AHU_Firmware/components/ESP-IDF-Component-Kit
+	url = https://github.com/janithcyapa/ESP-IDF-Component-Kit.git
