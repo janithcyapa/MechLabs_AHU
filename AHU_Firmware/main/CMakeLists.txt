@@ -4,4 +4,5 @@ idf_component_register(
     REQUIRES 
     util_i2c
     sens_aht21
+    sens_ens160
     )
