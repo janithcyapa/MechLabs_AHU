@@ -6,4 +6,6 @@ idf_component_register(
     sens_aht21
     sens_ens160
     sens_bme280
+    util_wifi
+    mqtt
     )
