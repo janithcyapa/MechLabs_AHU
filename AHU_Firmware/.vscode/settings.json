@@ -3,7 +3,7 @@
   "idf.openOcdConfigs": [
     "board/esp32-wrover-kit-3.3v.cfg"
   ],
-  "idf.port": "detect",
+  "idf.port": "/dev/ttyUSB0",
   "idf.currentSetup": "/home/jazz/esp/v5.5.1/esp-idf",
   "idf.customExtraVars": {
     "IDF_TARGET": "esp32"
@@ -13,5 +13,6 @@
     "--background-index",
     "--query-driver=**",
     "--compile-commands-dir=/home/jazz/Projects/MechLabs_AHU/AHU_Firmware/build"
-  ]
+  ],
+  "idf.flashType": "UART"
 }
