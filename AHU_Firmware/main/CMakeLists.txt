@@ -1,4 +1,7 @@
 idf_component_register(
     SRCS "main.cpp"
     INCLUDE_DIRS "."
-    REQUIRES util_i2c)
+    REQUIRES 
+    util_i2c
+    sens_aht21
+    )
