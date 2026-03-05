@@ -63,3 +63,8 @@ Data from ESP
 ```bash
 mosquitto_sub -h localhost -t "telemetry/#" -v
 ```
+
+Send to ESP
+```bash
+mosquitto_pub -h localhost -t "targets/esp_01" -m "26.5"
+```

@@ -7,5 +7,5 @@ idf_component_register(
     sens_ens160
     sens_bme280
     util_wifi
-    mqtt
+    util_mqtt
     )
