@@ -68,3 +68,18 @@ Send to ESP
 ```bash
 mosquitto_pub -h localhost -t "targets/esp_01" -m "26.5"
 ```
+
+
+ESP SIM
+```bash
+while true; do
+  # Generates a random number between 20.0 and 30.0
+  VALUE=$(echo "scale=1; 20 + $RANDOM % 100 / 10" | bc)
+  
+  echo "Sending $VALUE to telemetry/esp_01..."
+  
+  mosquitto_pub -h localhost -t "telemetry/esp_01" -m "$VALUE"
+  
+  sleep 2
+done
+```

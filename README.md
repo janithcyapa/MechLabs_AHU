@@ -41,3 +41,11 @@ On the Pi Zero / Linux host:
 ```bash
 sudo apt update
 sudo apt install mosquitto mosquitto-clients python3-pip
+```
+
+# Run FAST API
+```bash
+cd FastAPi/
+fastapi dev main.py
+```
+
