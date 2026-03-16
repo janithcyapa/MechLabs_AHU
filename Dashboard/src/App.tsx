@@ -6,9 +6,8 @@ import AHUDashboard from './pages/LiveMonitor';
 import Header from './components/Header';
 import Taskbar from './components/TaskBar';
 import SystemController from './pages/ControlPanel';
-
-const DataRecording = () => <div className="p-8 text-slate-300"><h2>Data Recording Module (Placeholder)</h2><p>Live dash and graphs go here.</p></div>;
-const Credits = () => <div className="p-8 text-slate-300"><h2>Credits & Documentation</h2><p>Developed by: W.S.P.Y.J.C.Yapa</p><p>Supervised by: Dr. DHS Maithreepala</p></div>;
+import DataRecorder from './pages/DataRecord';
+import ProjectCredits from './pages/Credit';
 
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
@@ -46,9 +45,9 @@ export default function App() {
       <MainLayout>
         <Routes>
           <Route path="/" element={<AHUDashboard />} />
-          <Route path="/recording" element={<DataRecording />} />
+          <Route path="/recording" element={<DataRecorder />} />
           <Route path="/control" element={<SystemController />} />
-          <Route path="/credits" element={<Credits />} />
+          <Route path="/credits" element={<ProjectCredits />} />
         </Routes>
       </MainLayout>
     </Router>

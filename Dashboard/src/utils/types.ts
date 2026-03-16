@@ -45,3 +45,5 @@ export interface ControlSignals {
     blower: number;
     [vavKey: `vavRoom${number}`]: number;
 }
+
+export type SensorKey = 'ambient_temp' | 'ambient_hum' | 'room1_temp' | 'room2_temp' | 'supply_temp' | 'co2';
