@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { FaFan } from 'react-icons/fa';
-import { WiHumidity } from 'react-icons/wi';
-import { MdOutlineCo2 } from 'react-icons/md';
+import { useState } from 'react';
+import { FaFan, FaTachometerAlt, FaThermometerHalf } from 'react-icons/fa';
 import { GiValve, GiHotSurface, GiSnowflake2 } from 'react-icons/gi';
+import AmbientAirCluster from '../components/LiveDash/AmbientAirCluster';
+import { MdOutlineCo2 } from 'react-icons/md';
+import { WiHumidity } from 'react-icons/wi';
 
-// --- TYPESCRIPT INTERFACES ---
+import { BiSolidSprayCan } from 'react-icons/bi';
+import { ComponentBlock, HorizontalDuct, SensorBlock, VerticalPipe, VerticalSensorBlock } from '../components/LiveDash/AHUComponents';
+
+
 interface SensorData {
   temp: number;
   hum: number;
@@ -34,52 +38,13 @@ interface ControlSignals {
   vavRoom2: number;
 }
 
-// --- REUSABLE UI COMPONENTS ---
-const DataBadge = ({ label, value, unit, isAlert = false }: { label: string, value: number, unit: string, isAlert?: boolean }) => (
-  <div className={`flex flex-col items-center p-1.5 rounded bg-slate-900 border ${isAlert ? 'border-red-500/50 text-red-400' : 'border-slate-700 text-cyan-400'} shadow-lg min-w-[60px] z-10`}>
-    <span className="text-[10px] text-slate-400 uppercase font-bold">{label}</span>
-    <span className="text-sm font-mono font-bold">{value}<span className="text-[10px] ml-0.5">{unit}</span></span>
-  </div>
-);
-
-const VerticalPipe = ({ height = "h-16", color = "bg-slate-700" }) => (
-  <div className={`w-6 ${height} ${color} border-x-2 border-slate-900 mx-auto relative overflow-hidden flex justify-center`}>
-     {/* Simulated air flow line */}
-     <div className="w-1 h-full bg-white/10 animate-pulse"></div>
-  </div>
-);
-
-const HorizontalDuct = ({ width = "w-full", color = "bg-slate-700", flow = "right" }) => (
-  <div className={`${width} h-8 ${color} border-y-2 border-slate-900 relative flex items-center`}>
-     <div className="w-full h-1 bg-white/10 animate-pulse"></div>
-  </div>
-);
-
-const ComponentBlock = ({ icon: Icon, label, controlValue, onControlChange, colorRing }: any) => (
-  <div className="flex flex-col items-center relative z-10 bg-slate-800 p-3 rounded-lg border border-slate-700 shadow-xl">
-    <div className="text-xs text-slate-400 mb-2 font-semibold tracking-wider">{label}</div>
-    <div className={`w-14 h-14 rounded-full flex items-center justify-center border-[3px] bg-slate-900 mb-3 ${colorRing}`}>
-      <Icon className="text-2xl text-slate-300" />
-    </div>
-    <div className="text-xs text-cyan-400 font-mono mb-1">{controlValue}% CMD</div>
-    <input
-      type="range"
-      min="0"
-      max="100"
-      value={controlValue}
-      onChange={(e) => onControlChange(Number(e.target.value))}
-      className="w-20 h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-    />
-  </div>
-);
-
 export default function ScadaAHU() {
-  // --- STATE ---
+
   const [sensors] = useState<HVACSystemData>({
     ambient: { temp: 32.5, hum: 65, co2: 410 },
     intake: { temp: 30.0, hum: 60, co2: 450 },
-    return: { temp: 24.5, hum: 55, co2: 800 },
-    economizer: { temp: 26.0, hum: 58, pressure: 102 },
+    return: { temp: 28.5, hum: 55, co2: 800 },
+    economizer: { temp: 24.0, hum: 58, pressure: 102 },
     afterCooling: { temp: 14.5, hum: 95, pressure: 98 },
     afterHeating: { temp: 18.0, hum: 60, pressure: 95 },
     releaseAir: { temp: 18.5, hum: 58, co2: 500 },
@@ -97,157 +62,169 @@ export default function ScadaAHU() {
     vavRoom2: 30,
   });
 
-  const updateControl = (key: keyof ControlSignals, val: number) => {
-    setControls(prev => ({ ...prev, [key]: val }));
-  };
 
   return (
-    <div className="min-h-screen bg-[#111827] text-slate-300 p-8 font-sans selection:bg-cyan-900">
-      
+    <div className="min-h-screen container mx-auto bg-[#111827] text-slate-300 p-8 font-sans selection:bg-cyan-900">
+
       {/* HEADER & TOP LEVEL DATA */}
-      <div className="flex justify-between items-start mb-12">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-widest flex items-center gap-3">
-            <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
-            AHU SCADA VIEW
+          <h1 className="text-xl font-bold text-white  flex items-center gap-3 uppercase">
+            <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+            Live Monitoring
           </h1>
-          <p className="text-slate-500 text-sm mt-1 ml-6 uppercase tracking-wider font-mono">System Online • Mode: Auto</p>
+          <p className="text-slate-500 text-sm ml-6 uppercase tracking-wider font-mono">System Online • Mode: Auto</p>
         </div>
-        
-        {/* Ambient Badge cluster */}
-        <div className="flex gap-4 p-3 rounded bg-slate-900 border border-slate-800">
-          <div className="text-xs text-slate-500 uppercase flex items-center mr-2">Ambient</div>
-          <DataBadge label="Temp" value={sensors.ambient.temp} unit="°C" />
-          <DataBadge label="Hum" value={sensors.ambient.hum} unit="%" />
-          <DataBadge label="CO2" value={sensors.ambient.co2 || 0} unit="ppm" />
-        </div>
+
+        <AmbientAirCluster />
       </div>
 
-      {/* --- MAIN SCADA SCHEMATIC AREA --- */}
-      <div className="relative w-full max-w-7xl mx-auto bg-[#1a2332] rounded-xl border border-slate-700 p-10 shadow-2xl overflow-hidden">
-        
-        {/* --- ROW 1: Return Air Drop --- */}
-        <div className="flex justify-start pl-[20%] relative h-24">
-          <div className="flex flex-col items-center absolute -top-4">
-            <span className="text-xs text-slate-500 uppercase mb-2 font-bold">Return Air</span>
-            <div className="flex gap-2 mb-2 absolute left-14 top-8">
-               <DataBadge label="Temp" value={sensors.return.temp} unit="°C" />
-               <DataBadge label="CO2" value={sensors.return.co2 || 0} unit="ppm" isAlert={(sensors.return.co2 || 0 )> 700 } />
-            </div>
-            <VerticalPipe height="h-20" color="bg-orange-900/40" />
+
+      <div className="relative w-full rounded-xl p-4 py-4 shadow-2xl overflow-hidden mt-8 text-slate-500">
+
+        {/* --- ROW 1: THE AHU & ENCLOSURE --- */}
+        <div className="flex items-center w-full relative z-20 p-2">
+
+          <SensorBlock 
+              label="Outside Air" 
+              temp={sensors.ambient.temp} 
+              hum={sensors.ambient.hum} 
+              co2={sensors.ambient.co2} 
+              width="max-w-48 w-full"
+            />
+
+          {/* THE AHU BOX */}
+          <div className="flex-5 h-48 border-4 border-slate-600/40 bg-slate-800/20 rounded-2xl relative flex items-center justify-between shadow-[inset_0_0_30px_rgba(0,0,0,0.2)]">
+            <span className="absolute z-30 -top-6 left-4 bg-slate-800/20 px-3 py-0.5 text-[10px] text-slate-400 font-bold uppercase tracking-widest rounded border border-slate-600/40 shadow-md">
+              AHU Enclosure
+            </span>
+
+            {/* 1. Mix Damper */}
+            <ComponentBlock icon={GiValve} label="MIX DAMPER" controlValue={controls.intakeOpening} colorRing="border-slate-500" />
+            <SensorBlock 
+              label="Mix Sensor" 
+              temp={sensors.economizer.temp} 
+              hum={sensors.economizer.hum} 
+              pressure={sensors.economizer.pressure} 
+            />
+            {/* 2. Cooling Coil */}
+            <ComponentBlock icon={GiSnowflake2} label="COOL COIL" controlValue={controls.coolingCoil} colorRing="border-blue-500 text-blue-400" />
+            <SensorBlock 
+              label="Cooler Sensor" 
+              temp={sensors.afterCooling.temp} 
+              hum={sensors.afterCooling.hum} 
+              pressure={sensors.afterCooling.pressure} 
+            />
+ 
+            {/* 3. Heating Coil */}
+            <ComponentBlock icon={GiHotSurface} label="HEAT COIL" controlValue={controls.heatingCoil} colorRing="border-red-500 text-red-400" />
+            <HorizontalDuct width="w-24" color={""} />
+            <ComponentBlock icon={BiSolidSprayCan} label="HUMIDIFER" controlValue={controls.humidifier} colorRing="border-sky-500 text-sky-400" />
+            <SensorBlock 
+              label="Heater Sensor" 
+              temp={sensors.afterCooling.temp} 
+              hum={sensors.afterCooling.hum} 
+              pressure={sensors.afterCooling.pressure} 
+            />
+            <ComponentBlock icon={FaFan} label="MAIN BLOWER" controlValue={controls.blower} colorRing="border-green-500 text-green-400" />
           </div>
+
+
         </div>
 
-        {/* --- ROW 2: The Main AHU Duct Flow --- */}
-        <div className="flex items-center w-full relative">
-          
-          {/* 1. Intake */}
-          <div className="w-[15%] flex flex-col items-center justify-center relative">
-            <span className="absolute -top-12 text-xs text-slate-500 uppercase font-bold">Outside Air</span>
-            <div className="flex flex-col gap-1 absolute -top-8 -left-2">
-              <DataBadge label="Temp" value={sensors.intake.temp} unit="°C" />
-              <DataBadge label="Hum" value={sensors.intake.hum} unit="%" />
+        {/* --- ROW 2: ROUTING (Return Air Up / Supply Air Down) --- */}
+        <div className="flex items-center justify-between w-full relative h-28 z-10">
+            <div className="max-w-56 w-full" />
+             <VerticalSensorBlock 
+              label="Return Air" 
+              temp={sensors.return.temp} 
+              hum={sensors.return.hum} 
+              co2={sensors.return.co2} 
+            />
+            <div className="flex-1"/>
+            <VerticalSensorBlock 
+              label="Release Air" 
+              temp={sensors.releaseAir.temp} 
+              hum={sensors.releaseAir.hum} 
+              co2={sensors.releaseAir.co2} 
+            />
+            <div className="max-w-10 w-full" />
+          {/* Return Air Column (Lines up under Mix Damper) */}
+          {/* <div className="ml-[22%] flex items-center h-full ">
+            <div className="flex flex-col items-end mr-3">
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Return Air</span>
+              <SeamlessSensor icon={FaThermometerHalf} value={sensors.return.temp} unit="°C" type="temp" />
+              <div className="my-1"></div>
+              <SeamlessSensor icon={MdOutlineCo2} value={sensors.return.co2 || 0} unit="ppm" type="co2" />
             </div>
-            <HorizontalDuct color="bg-blue-900/30" />
-          </div>
+            <VerticalPipe height="h-full" color="bg-orange-900/30" />
+          </div> */}
 
-          {/* 2. Mixing Box / Economizer */}
-          <ComponentBlock 
-            icon={GiValve} label="MIX DAMPER" 
-            controlValue={controls.intakeOpening} onControlChange={(v: number) => updateControl('intakeOpening', v)} 
-            colorRing="border-slate-500"
-          />
-          <HorizontalDuct width="w-[10%]" color="bg-gradient-to-r from-blue-900/30 to-slate-700" />
-
-          {/* Mixing Sensors Overlay */}
-          <div className="absolute left-[26%] -top-14 flex gap-2">
-             <DataBadge label="Mix T" value={sensors.economizer.temp} unit="°C" />
-             <DataBadge label="Mix P" value={sensors.economizer.pressure || 0} unit="Pa" />
-          </div>
-
-          {/* 3. Cooling Coil */}
-          <ComponentBlock 
-            icon={GiSnowflake2} label="COOLING COIL" 
-            controlValue={controls.coolingCoil} onControlChange={(v: number) => updateControl('coolingCoil', v)} 
-            colorRing="border-blue-500 text-blue-400"
-          />
-          <HorizontalDuct width="w-[8%]" color="bg-blue-900/40" />
-
-           {/* Cooling Sensors Overlay */}
-           <div className="absolute left-[44%] top-16 flex gap-2">
-             <DataBadge label="Cool T" value={sensors.afterCooling.temp} unit="°C" />
-          </div>
-
-          {/* 4. Heating Coil */}
-          <ComponentBlock 
-            icon={GiHotSurface} label="HEATING COIL" 
-            controlValue={controls.heatingCoil} onControlChange={(v: number) => updateControl('heatingCoil', v)} 
-            colorRing="border-red-500 text-red-400"
-          />
-          <HorizontalDuct width="w-[8%]" color="bg-slate-700" />
-
-          {/* Heating Sensors Overlay */}
-          <div className="absolute left-[58%] top-16 flex gap-2">
-             <DataBadge label="Heat T" value={sensors.afterHeating.temp} unit="°C" />
-          </div>
-
-          {/* 5. Main Blower */}
-          <ComponentBlock 
-            icon={FaFan} label="MAIN BLOWER" 
-            controlValue={controls.blower} onControlChange={(v: number) => updateControl('blower', v)} 
-            colorRing="border-green-500 text-green-400"
-          />
-          
-          {/* Supply Header to Zones */}
-          <HorizontalDuct width="w-[15%]" color="bg-cyan-900/30" />
-          <div className="w-6 h-8 bg-cyan-900/30 border-y-2 border-r-2 border-slate-900 rounded-r"></div>
-
-          {/* Supply Sensors Overlay */}
-          <div className="absolute right-[10%] -top-14 flex gap-2">
-             <DataBadge label="Supply T" value={sensors.releaseAir.temp} unit="°C" />
-             <DataBadge label="Supply H" value={sensors.releaseAir.hum} unit="%" />
-          </div>
+          {/* Supply Air Column (Lines up under right duct) */}
+          {/* <div className="mr-[2%] flex items-center h-full">
+            <VerticalPipe height="h-full" color="bg-cyan-900/30" />
+            <div className="flex flex-col items-start ml-3">
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Supply Air</span>
+              <SeamlessSensor icon={FaThermometerHalf} value={sensors.releaseAir.temp} unit="°C" type="temp" />
+              <div className="my-1"></div>
+              <SeamlessSensor icon={WiHumidity} value={sensors.releaseAir.hum} unit="%" type="hum" />
+            </div>
+          </div> */}
         </div>
 
         {/* --- ROW 3: VAV ZONES --- */}
-        <div className="flex justify-end pr-[5%] mt-8 relative">
-           {/* Pipe dropping down to zones */}
-           <div className="absolute right-[16%] -top-8">
-              <VerticalPipe height="h-12" color="bg-cyan-900/30" />
-           </div>
+        <div className="grid grid-cols-2 gap-12 w-full px-[8%] mt-4 relative z-20">
 
-           <div className="w-[40%] flex flex-col gap-6 pt-6 border-t-4 border-l-4 rounded-tl-xl border-cyan-900/30 pl-8 relative">
-              
-              {/* VAV Room 1 */}
-              <div className="flex items-center gap-6 bg-[#111827] p-4 rounded border border-slate-700">
-                 <ComponentBlock 
-                    icon={GiValve} label="VAV ZONE A" 
-                    controlValue={controls.vavRoom1} onControlChange={(v: number) => updateControl('vavRoom1', v)} 
-                    colorRing="border-cyan-500"
-                 />
-                 <div className="flex-1 grid grid-cols-2 gap-2">
-                    <DataBadge label="Room T" value={sensors.room1.temp} unit="°C" />
-                    <DataBadge label="Room CO2" value={sensors.room1.co2 || 0} unit="ppm" />
-                 </div>
-              </div>
+          {/* VAV Room A */}
+          <div className="flex items-center gap-6 bg-slate-900 p-5 rounded-2xl border border-slate-700 shadow-lg relative">
+            <ComponentBlock icon={GiValve} label="VAV ZONE A" controlValue={controls.vavRoom1} colorRing="border-cyan-500 text-cyan-400" />
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-700 pb-1 mb-1">Room Conditions</span>
+              <SeamlessSensor icon={FaThermometerHalf} value={sensors.room1.temp} unit="°C" type="temp" />
+              <SeamlessSensor icon={MdOutlineCo2} value={sensors.room1.co2 || 0} unit="ppm" type="co2" />
+            </div>
+          </div>
 
-              {/* VAV Room 2 */}
-              <div className="flex items-center gap-6 bg-[#111827] p-4 rounded border border-slate-700">
-                 <ComponentBlock 
-                    icon={GiValve} label="VAV ZONE B" 
-                    controlValue={controls.vavRoom2} onControlChange={(v: number) => updateControl('vavRoom2', v)} 
-                    colorRing="border-cyan-500"
-                 />
-                 <div className="flex-1 grid grid-cols-2 gap-2">
-                    <DataBadge label="Room T" value={sensors.room2.temp} unit="°C" />
-                    <DataBadge label="Room CO2" value={sensors.room2.co2 || 0} unit="ppm" />
-                 </div>
-              </div>
+          {/* VAV Room B */}
+          <div className="flex items-center gap-6 bg-slate-900 p-5 rounded-2xl border border-slate-700 shadow-lg relative">
+            <ComponentBlock icon={GiValve} label="VAV ZONE B" controlValue={controls.vavRoom2} colorRing="border-cyan-500 text-cyan-400" />
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-700 pb-1 mb-1">Room Conditions</span>
+              <SeamlessSensor icon={FaThermometerHalf} value={sensors.room2.temp} unit="°C" type="temp" />
+              <SeamlessSensor icon={MdOutlineCo2} value={sensors.room2.co2 || 0} unit="ppm" type="co2" />
+            </div>
+          </div>
 
-           </div>
         </div>
-
       </div>
+
     </div>
   );
 }
+
+
+const SeamlessSensor = ({ icon: Icon, value, unit, type }: { icon: any, value: number, unit: string, type: string }) => {
+  // Color logic identical to the seamless ambient widget
+  let colorClass = 'text-slate-300';
+  if (type === 'temp') {
+    if (value < 18) colorClass = 'text-blue-400 drop-shadow-[0_0_5px_rgba(96,165,250,0.8)]';
+    else if (value > 28) colorClass = 'text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.8)]';
+    else colorClass = 'text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.8)]';
+  } else if (type === 'hum') {
+    colorClass = 'text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]';
+  } else if (type === 'co2') {
+    if (value > 1000) colorClass = 'text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]';
+    else if (value < 800) colorClass = 'text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.8)]';
+    else colorClass = 'text-amber-500 drop-shadow-[0_0_5px_rgba(245,158,11,0.8)]';
+  } else if (type === 'pressure') {
+    colorClass = 'text-purple-400 drop-shadow-[0_0_5px_rgba(192,132,252,0.8)]';
+  }
+
+  return (
+    <div className={`flex items-center gap-1.5 bg-[#111827]/80 backdrop-blur-sm px-2 py-1 rounded-full border border-slate-700/50 shadow-sm ${colorClass}`}>
+      <Icon className="text-sm" />
+      <span className="font-mono font-bold text-xs tracking-tighter">{value}<span className="text-[10px] ml-[1px] opacity-70">{unit}</span></span>
+    </div>
+  );
+};
+
