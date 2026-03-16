@@ -5,9 +5,9 @@ import SplashScreen from './components/SplashScreen';
 import AHUDashboard from './pages/LiveMonitor';
 import Header from './components/Header';
 import Taskbar from './components/TaskBar';
+import SystemController from './pages/ControlPanel';
 
 const DataRecording = () => <div className="p-8 text-slate-300"><h2>Data Recording Module (Placeholder)</h2><p>Live dash and graphs go here.</p></div>;
-const ControlLogic = () => <div className="p-8 text-slate-300"><h2>Custom Python Control Logics (Placeholder)</h2><p>Logic upload and execution interface goes here.</p></div>;
 const Credits = () => <div className="p-8 text-slate-300"><h2>Credits & Documentation</h2><p>Developed by: W.S.P.Y.J.C.Yapa</p><p>Supervised by: Dr. DHS Maithreepala</p></div>;
 
 
@@ -47,7 +47,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<AHUDashboard />} />
           <Route path="/recording" element={<DataRecording />} />
-          <Route path="/logic" element={<ControlLogic />} />
+          <Route path="/control" element={<SystemController />} />
           <Route path="/credits" element={<Credits />} />
         </Routes>
       </MainLayout>

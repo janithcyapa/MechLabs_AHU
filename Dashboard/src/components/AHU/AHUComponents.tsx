@@ -3,24 +3,74 @@ import {  FaTachometerAlt, FaThermometerHalf } from 'react-icons/fa';
 import { MdOutlineCo2 } from 'react-icons/md';
 import { WiHumidity } from 'react-icons/wi';
 
-export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing }: any) => (
-  <div className="flex flex-col items-center justify-between relative z-10 p-3 rounded-xl bg-slate-700/40 shadow-xl min-w-25 h-full">
-    <div className="text-xs uppercase text-center">{label}</div>
+export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing }: any) => {
+  // --- Math for the SVG Dial ---
+  const radius = 34; // Slightly smaller radius to accommodate the thicker stroke
+  const circumference = 2 * Math.PI * radius;
+  const clampedValue = Math.max(0, Math.min(100, controlValue || 0)); 
+  const strokeDashoffset = circumference - (clampedValue / 100) * circumference;
 
-    <div className={`w-20 h-20 rounded-full flex items-center justify-center border-[3px] bg-[#0f172a] shadow-inner ${colorRing}`}>
-      <Icon className="text-4xl text-slate-300 drop-shadow-sm" />
+  return (
+    <div className="flex flex-col items-center justify-between relative z-10 p-3 rounded-xl bg-slate-700/40 shadow-xl min-w-28 h-full">
+      <div className="text-xs uppercase text-center mb-3">
+        {label}
+      </div>
+
+      {/* The Dial Container */}
+      <div className={`relative w-20 h-20 flex items-center justify-center ${colorRing}`}>
+        
+        {/* SVG Progress Ring */}
+        {/* rotate-90 starts the dial at 6 o'clock (the bottom) */}
+        <svg className="absolute inset-0 w-full h-full rotate-90 drop-shadow-md z-20">
+          {/* Faint Background Track */}
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="transparent"
+            className="opacity-20"
+          />
+          {/* Active Glowing Progress Track */}
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className="transition-all duration-700 ease-out"
+          />
+        </svg>
+
+        {/* Center Inner Circle */}
+        {/* Shrunk slightly to 60px to fit inside the thicker 8px stroke */}
+        <div className="w-15 h-15 rounded-full flex items-center justify-center bg-[#0f172a] shadow-[inset_0_4px_10px_rgba(0,0,0,0.6)] z-10">
+          <Icon className="text-2xl text-slate-200 drop-shadow-sm" />
+        </div>
+      </div>
+
+      {/* Percentage Text - Now colored by {colorRing} */}
+      <div className={`text-xl font-mono font-bold tracking-wider mt-3 ${colorRing} `}>
+        {clampedValue}%
+      </div>
     </div>
-    <div className="text-xl font-mono font-bold tracking-wider">{controlValue}%</div>
-  </div>
-);
-export const SensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", width = 'w-full' }: any) => {
+  );
+};
+
+
+export const SensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", width = 'w-full', showDuct = true }: any) => {
 
   // If no sensors are provided at all, we can hide the whole box, or just render the duct.
   const hasReadings = temp != null || hum != null || co2 != null || pressure != null;
 
   return (
     <div className={`min-w-25 ${width} relative flex flex-col justify-center items-center`}>
-      <HorizontalDuct width="w-full" color={duct} />
+      {showDuct && <HorizontalDuct width="w-full" color={duct} />}
       
       <div className='absolute -top-16 pt-2 flex flex-col items-center gap-1 z-20'>
         {label && <div className="text-xs uppercase text-center">{label}</div>}
@@ -68,14 +118,14 @@ export const SensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", w
   );
 };
 
-export const VerticalSensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", height = 'h-32' }: any) => {
+export const VerticalSensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", height = 'h-32', showDuct = true }: any) => {
 
   const hasReadings = temp != null || hum != null || co2 != null || pressure != null;
 
   return (
     <div className={`relative flex items-center justify-center ${height} w-12`}>
       {/* The Vertical Pipe Background */}
-      <VerticalPipe height="h-full" color={duct} />
+      {showDuct && <VerticalPipe height="h-full" color={duct} />}
       
       {/* Label positioned to the left of the pipe */}
       {label && (

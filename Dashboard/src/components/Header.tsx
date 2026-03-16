@@ -38,7 +38,7 @@ const Header = () => {
         <NavLink to="/recording" className={navLinkClass}>
           Data Recording
         </NavLink>
-        <NavLink to="/logic" className={navLinkClass}>
+        <NavLink to="/control" className={navLinkClass}>
           Control Logics
         </NavLink>
         <NavLink to="/credits" className={navLinkClass}>
