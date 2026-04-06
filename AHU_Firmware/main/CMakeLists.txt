@@ -8,4 +8,5 @@ idf_component_register(
     sens_bme280
     util_wifi
     util_mqtt
+    util_pwm
     )
