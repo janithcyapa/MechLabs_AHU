@@ -75,12 +75,14 @@ The AHU ESP32 publishes to specific component topics. Every payload uses a stand
 
 | Component | Topic Path | Example JSON Payload |
 | :--- | :--- | :--- |
+| **System Status** | `ahu/telemetry/state` | `{"dt": 12, "start":10}` |
 | **Outside Air** | `ahu/telemetry/outside` | `{"temp": 32.5, "hum": 65.0, "co2": 410, "pressure": null}` |
 | **Return Air** | `ahu/telemetry/return` | `{"temp": 28.5, "hum": 55.0, "co2": 800, "pressure": null}` |
 | **Mix Sensor** | `ahu/telemetry/mix` | `{"temp": 24.0, "hum": 58.0, "co2": null, "pressure": 102}` |
 | **Cooler Sensor** | `ahu/telemetry/cooler` | `{"temp": 14.5, "hum": 95.0, "co2": null, "pressure": 98}` |
 | **Heater Sensor** | `ahu/telemetry/heater` | `{"temp": 18.0, "hum": 60.0, "co2": null, "pressure": 95}` |
 | **Release Air** | `ahu/telemetry/release` | `{"temp": 18.5, "hum": 58.0, "co2": 500, "pressure": null}` |
+| **Actuators** | `ahu/telemetry/actuators` | `{"mix_damper": 40.0, "cool_coil": 75.0, "heat_coil": 60.0, "humidifier": 10.0, "main_blower": 80.0}` |
 
 **Data Types:**
 * `temp` (Float): Temperature in °C

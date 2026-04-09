@@ -46,10 +46,10 @@ export default function DataRecorder() {
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
             Data Record
           </h1>
-          <p className="text-slate-500 text-sm ml-6 uppercase tracking-wider font-mono">System Online • Mode: Auto</p>
+          <p className="text-slate-500 text-sm ml-6 uppercase tracking-wider font-mono">RECORDE AND SAVE DATA</p>
         </div>
         <div className="flex-1"></div>
-        <DataRecordController 
+        {/* <DataRecordController 
           isRecording={isRecording}
           setIsRecording={setIsRecording}
           timeStep={timeStep}
@@ -57,8 +57,8 @@ export default function DataRecorder() {
           dataCount={dataCount}
           onReset={handleReset}
           onSave={handleSave}
-        />
-        <ModeSelector mode={mode} setMode={setMode} />
+        /> */}
+        <ModeSelector/>
         <AmbientAirCluster />
       </div>
 

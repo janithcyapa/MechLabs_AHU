@@ -4,27 +4,15 @@ import { GiValve, GiHotSurface, GiSnowflake2 } from 'react-icons/gi';
 import { BiSolidSprayCan } from 'react-icons/bi';
 import { ComponentBlock, HorizontalDuct, SensorBlock, VerticalSensorBlock } from './AHUComponents';
 import type { ControlSignals, HVACSystemData, RoomLayout } from '../../utils/types';
+import { useTelemetry } from '../../utils/TelemetryContext';
 
 export default function ScadaHVAC() {
-
+    const { hvacData , actuators } = useTelemetry();
     const [sensors] = useState<HVACSystemData>({
-        ambient: { temp: 32.5, hum: 65, co2: 410 },
-        intake: { temp: 30.0, hum: 60, co2: 450 },
-        return: { temp: 28.5, hum: 55, co2: 800 },
-        economizer: { temp: 24.0, hum: 58, pressure: 102 },
-        afterCooling: { temp: 14.5, hum: 95, pressure: 98 },
-        afterHeating: { temp: 18.0, hum: 60, pressure: 95 },
-        releaseAir: { temp: 18.5, hum: 58, co2: 500 },
         room1: { temp: 23.0, hum: 55, co2: 600 },
-        room2: { temp: 25.5, hum: 58, co2: 750 },
     });
 
     const [controls] = useState<ControlSignals>({
-        intakeOpening: 40,
-        coolingCoil: 75,
-        heatingCoil: 60,
-        humidifier: 10,
-        blower: 80,
         vavRoom1: 60,
         vavRoom2: 30,
     });
@@ -35,21 +23,21 @@ export default function ScadaHVAC() {
             temp: sensors.room1?.temp, co2: sensors.room1?.co2, hum: sensors.room1?.hum, valve: controls.vavRoom1,
             colStart: 1, rowStart: 1, colSpan: 3, rowSpan: 1
         },
-        {
-            id: 'room2', label: 'WEST ZONE',
-            temp: sensors.room2?.temp, co2: sensors.room2?.co2, hum: sensors.room2?.hum, valve: controls.vavRoom2,
-            colStart: 1, rowStart: 2, colSpan: 1, rowSpan: 2
-        },
-        {
-            id: 'room3', label: 'CENTER HUB',
-            temp: sensors.room3?.temp, co2: sensors.room3?.co2, hum: sensors.room3?.hum, valve: controls.vavRoom3,
-            colStart: 2, rowStart: 2, colSpan: 1, rowSpan: 1,
-        },
-        {
-            id: 'room4', label: 'EAST ZONE',
-            temp: sensors.room4?.temp, co2: sensors.room4?.co2, hum: sensors.room4?.hum, valve: controls.vavRoom4,
-            colStart: 3, rowStart: 2, colSpan: 1, rowSpan: 2
-        },
+        // {
+        //     id: 'room2', label: 'WEST ZONE',
+        //     temp: sensors.room2?.temp, co2: sensors.room2?.co2, hum: sensors.room2?.hum, valve: controls.vavRoom2,
+        //     colStart: 1, rowStart: 2, colSpan: 1, rowSpan: 2
+        // },
+        // {
+        //     id: 'room3', label: 'CENTER HUB',
+        //     temp: sensors.room3?.temp, co2: sensors.room3?.co2, hum: sensors.room3?.hum, valve: controls.vavRoom3,
+        //     colStart: 2, rowStart: 2, colSpan: 1, rowSpan: 1,
+        // },
+        // {
+        //     id: 'room4', label: 'EAST ZONE',
+        //     temp: sensors.room4?.temp, co2: sensors.room4?.co2, hum: sensors.room4?.hum, valve: controls.vavRoom4,
+        //     colStart: 3, rowStart: 2, colSpan: 1, rowSpan: 2
+        // },
         // {
         //     id: 'room5', label: 'SOUTH ZONE',
         //     temp: sensors.room5?.temp, co2: sensors.room5?.co2, hum: sensors.room5?.hum, valve: controls.vavRoom5,
@@ -70,9 +58,9 @@ export default function ScadaHVAC() {
             <div className="flex items-center w-full relative z-20 p-2">
                 <SensorBlock
                     label="Outside Air"
-                    temp={sensors.ambient.temp}
-                    hum={sensors.ambient.hum}
-                    co2={sensors.ambient.co2}
+                    temp={hvacData.ambient.temp}
+                    hum={hvacData.ambient.hum}
+                    co2={hvacData.ambient.co2}
                     width="max-w-48 w-full"
                     duct="bg-slate-600/50" // Neutral ambient air
                 />
@@ -83,44 +71,44 @@ export default function ScadaHVAC() {
                     </span>
 
                     {/* 1. Mix Damper */}
-                    <ComponentBlock icon={GiValve} label="MIX DAMPER" controlValue={controls.intakeOpening} colorRing="text-slate-500" />
+                    <ComponentBlock icon={GiValve} label="MIX DAMPER" controlValue={actuators?.intakeOpening} colorRing="text-slate-500" />
 
                     <SensorBlock
                         label="Mix Sensor"
-                        temp={sensors.economizer.temp}
-                        hum={sensors.economizer.hum}
-                        pressure={sensors.economizer.pressure}
+                        temp={hvacData.economizer.temp}
+                        hum={hvacData.economizer.hum}
+                        pressure={hvacData.economizer.pressure}
                         duct="bg-slate-700/60" // Mixed transition air
                     />
 
                     {/* 2. Cooling Coil */}
-                    <ComponentBlock icon={GiSnowflake2} label="COOL COIL" controlValue={controls.coolingCoil} colorRing="text-sky-400" />
+                    <ComponentBlock icon={GiSnowflake2} label="COOL COIL" controlValue={actuators?.coolingCoil} colorRing="text-sky-400" />
 
                     <SensorBlock
                         label="Cooler Sensor"
-                        temp={sensors.afterCooling.temp}
-                        hum={sensors.afterCooling.hum}
-                        pressure={sensors.afterCooling.pressure}
+                        temp={hvacData.afterCooling.temp}
+                        hum={hvacData.afterCooling.hum}
+                        pressure={hvacData.afterCooling.pressure}
                         duct="bg-sky-900/40" // Cold air
                     />
 
                     {/* 3. Heating Coil */}
-                    <ComponentBlock icon={GiHotSurface} label="HEAT COIL" controlValue={controls.heatingCoil} colorRing="text-red-400" />
+                    <ComponentBlock icon={GiHotSurface} label="HEAT COIL" controlValue={actuators?.heatingCoil} colorRing="text-red-400" />
 
                     {/* Duct between heater and humidifier */}
                     <HorizontalDuct width="w-24" color="bg-red-900/30" />
 
-                    <ComponentBlock icon={BiSolidSprayCan} label="HUMIDIFIER" controlValue={controls.humidifier} colorRing="text-cyan-400" />
+                    <ComponentBlock icon={BiSolidSprayCan} label="HUMIDIFIER" controlValue={actuators?.humidifier} colorRing="text-cyan-400" />
 
                     <SensorBlock
                         label="Heater Sensor"
-                        temp={sensors.afterHeating.temp}
-                        hum={sensors.afterHeating.hum}
-                        pressure={sensors.afterHeating.pressure}
+                        temp={hvacData.afterHeating.temp}
+                        hum={hvacData.afterHeating.hum}
+                        pressure={hvacData.afterHeating.pressure}
                         duct="bg-cyan-900/40" // Fully conditioned supply air
                     />
 
-                    <ComponentBlock icon={FaFan} label="MAIN BLOWER" controlValue={controls.blower} colorRing="text-green-400" />
+                    <ComponentBlock icon={FaFan} label="MAIN BLOWER" controlValue={actuators?.blower} colorRing="text-green-400" />
                 </div>
             </div>
 
@@ -131,9 +119,9 @@ export default function ScadaHVAC() {
                 {/* Return Air dropping in */}
                 <VerticalSensorBlock
                     label="Return Air"
-                    temp={sensors.return.temp}
-                    hum={sensors.return.hum}
-                    co2={sensors.return.co2}
+                    temp={hvacData.return.temp}
+                    hum={hvacData.return.hum}
+                    co2={hvacData.return.co2}
                     duct="bg-red-900/20" // Stale return air
                 />
 
@@ -142,9 +130,9 @@ export default function ScadaHVAC() {
                 {/* Supply Air dropping down to zones */}
                 <VerticalSensorBlock
                     label="Release Air"
-                    temp={sensors.releaseAir.temp}
-                    hum={sensors.releaseAir.hum}
-                    co2={sensors.releaseAir.co2}
+                    temp={hvacData.releaseAir.temp}
+                    hum={hvacData.releaseAir.hum}
+                    co2={hvacData.releaseAir.co2}
                     duct="bg-cyan-900/40" // Conditioned supply air
                 />
 

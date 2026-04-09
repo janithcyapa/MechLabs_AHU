@@ -1,15 +1,25 @@
 export interface SensorData {
+    ts: number;
     temp: number;
     hum: number;
     co2?: number;
     pressure?: number;
 }
 
-export interface SensorData {
-    temp: number;
-    hum: number;
-    co2?: number;
-    pressure?: number;
+export type TelemetryState = Record<string, SensorData>;
+
+export interface TelemetryContextType {
+    telemetry: TelemetryState;
+    hvacData: HVACSystemData;
+    actuators: ControlSignals | null;
+    systemStatus: { online: boolean; uptime: number };
+    isConnected: boolean;
+}
+
+export interface WebSocketMessage {
+    type: 'telemetry' | 'command' | 'ping';
+    topic?: string;
+    data?: SensorData;
 }
 
 export interface HVACSystemData {

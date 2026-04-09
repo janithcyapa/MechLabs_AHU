@@ -1,7 +1,8 @@
 idf_component_register(
     SRCS "main.cpp"
     INCLUDE_DIRS "."
-    REQUIRES 
+    REQUIRES
+    json 
     util_i2c
     sens_aht21
     sens_ens160

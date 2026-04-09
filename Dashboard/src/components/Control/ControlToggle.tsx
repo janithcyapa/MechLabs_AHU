@@ -1,11 +1,8 @@
+import { useState } from 'react';
 import { FaSlidersH, FaRobot, FaPython } from 'react-icons/fa';
 
-interface ModeSelectorProps {
-  mode: 'manual' | 'auto' | 'custom';
-  setMode: (mode: 'manual' | 'auto' | 'custom') => void;
-}
-
-export default function ModeSelector({ mode, setMode }: ModeSelectorProps) {
+export default function ModeSelector() {
+  const [mode, setMode] = useState<'manual' | 'auto' | 'custom'>('manual');
   return (
     <div 
       className="relative flex items-center h-16 px-1.5 min-w-72 rounded-xl shadow-lg overflow-hidden shrink-0 border border-slate-700/50"
