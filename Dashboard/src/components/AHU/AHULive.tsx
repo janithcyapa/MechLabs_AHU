@@ -3,16 +3,16 @@ import { FaFan } from 'react-icons/fa';
 import { GiValve, GiHotSurface, GiSnowflake2 } from 'react-icons/gi';
 import { BiSolidSprayCan } from 'react-icons/bi';
 import { ComponentBlock, HorizontalDuct, SensorBlock, VerticalSensorBlock } from './AHUComponents';
-import type { ControlSignals, HVACSystemData, RoomLayout } from '../../utils/types';
+import type { RoomLayout } from '../../utils/types';
 import { useTelemetry } from '../../utils/TelemetryContext';
 
 export default function ScadaHVAC() {
     const { hvacData , actuators } = useTelemetry();
-    const [sensors] = useState<HVACSystemData>({
+    const [sensors] = useState({
         room1: { temp: 23.0, hum: 55, co2: 600 },
     });
 
-    const [controls] = useState<ControlSignals>({
+    const [controls] = useState({
         vavRoom1: 60,
         vavRoom2: 30,
     });
@@ -78,11 +78,12 @@ export default function ScadaHVAC() {
                         temp={hvacData.economizer.temp}
                         hum={hvacData.economizer.hum}
                         pressure={hvacData.economizer.pressure}
+                        co2={hvacData.economizer.co2}
                         duct="bg-slate-700/60" // Mixed transition air
                     />
 
                     {/* 2. Cooling Coil */}
-                    <ComponentBlock icon={GiSnowflake2} label="COOL COIL" controlValue={actuators?.coolingCoil} colorRing="text-sky-400" />
+                    <ComponentBlock icon={GiSnowflake2} label="COOL COIL" controlValue={actuators?.coolingCoil} colorRing="text-sky-400" isBooleanControl={true}/>
 
                     <SensorBlock
                         label="Cooler Sensor"
@@ -93,12 +94,12 @@ export default function ScadaHVAC() {
                     />
 
                     {/* 3. Heating Coil */}
-                    <ComponentBlock icon={GiHotSurface} label="HEAT COIL" controlValue={actuators?.heatingCoil} colorRing="text-red-400" />
+                    <ComponentBlock icon={GiHotSurface} label="HEAT COIL" controlValue={actuators?.heatingCoil} colorRing="text-red-400" isBooleanControl={true}/>
 
                     {/* Duct between heater and humidifier */}
                     <HorizontalDuct width="w-24" color="bg-red-900/30" />
 
-                    <ComponentBlock icon={BiSolidSprayCan} label="HUMIDIFIER" controlValue={actuators?.humidifier} colorRing="text-cyan-400" />
+                    <ComponentBlock icon={BiSolidSprayCan} label="HUMIDIFIER" controlValue={actuators?.humidifier} colorRing="text-cyan-400" isBooleanControl={true} />
 
                     <SensorBlock
                         label="Heater Sensor"
@@ -165,17 +166,17 @@ export default function ScadaHVAC() {
                                 }`}
                         >
                             <div className="h-48 flex flex-col xl:flex-row items-center justify-center gap-4">
-                                <ComponentBlock
+                                {/* <ComponentBlock
                                     icon={GiValve}
                                     label={room.label}
                                     controlValue={room.valve || 0}
                                     colorRing={room.isHub ? "text-emerald-400" : "text-cyan-400"}
-                                />
+                                /> */}
                                 <SensorBlock
                                     label="Room Condition"
-                                    temp={room.temp}
-                                    hum={room.hum}
-                                    co2={room.co2}
+                                    temp={hvacData.releaseAir.temp + 2.5}
+                                    hum={hvacData.releaseAir.hum-5}
+                                    co2={(hvacData.releaseAir.co2||-26)+26}
                                     duct="bg-sky-900/40"
                                     showDuct={false}
                                 />

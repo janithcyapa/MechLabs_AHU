@@ -3,6 +3,7 @@ import ScadaHVAC from "../components/AHU/AHULive";
 import AmbientAirCluster from "../components/AHU/AmbientAirCluster";
 import ModeSelector from "../components/Control/ControlToggle";
 import { useTelemetry } from "../utils/TelemetryContext";
+import SystemControllerPanel from "../components/Control/SystemControllerPanel";
 
 export default function ScadaAHU() {
   // const { hvacData, isConnected , actuators} = useTelemetry();
@@ -17,11 +18,12 @@ export default function ScadaAHU() {
           <p className="text-slate-500 text-sm ml-6 uppercase tracking-wider font-mono">SCADA SYSTEM</p>
         </div>
         <div className="flex-1"></div>
-        <ModeSelector/>
+        {/* <ModeSelector/> */}
         <AmbientAirCluster />
       </div>
  
       <ScadaHVAC />
+      <SystemControllerPanel />
     </div>
   );
 }

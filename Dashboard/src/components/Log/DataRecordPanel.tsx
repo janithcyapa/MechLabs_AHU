@@ -27,18 +27,67 @@ const CATEGORIES = {
     sensors: ["amb_t", "amb_h", "amb_co2"],
   },
   return: { label: "Return Air", sensors: ["ret_t", "ret_h", "ret_co2"] },
-  mixed: { label: "Mixed Air", sensors: ["mix_t", "mix_h", "mix_p"] },
+  mixed: { label: "Mixed Air", sensors: ["mix_t", "mix_h", "mix_co2"] },
   cooled: { label: "Cooled Air", sensors: ["cool_t", "cool_h", "cool_p"] },
   heated: { label: "Heated Air", sensors: ["heat_t", "heat_h", "heat_p"] },
   release: { label: "Release Air", sensors: ["rel_t", "rel_h", "rel_co2"] },
   rooms: {
     label: "Zones/Rooms",
-    sensors: ["r1_t", "r1_co2"],
+    sensors: ["r1_t", "r1_h", "r1_co2"],
   },
   controls: {
     label: "Control Signals",
     sensors: ["blower_cmd", "cool_cmd", "heat_cmd", "hum_cmd", "mix_cmd"],
   },
+};
+
+// --- Helper: Format Names for Legend & Tooltip ---
+const formatLegendName = (key: string) => {
+  const parts = key.split('_');
+  if (parts.length !== 2) return key;
+
+  const prefixMap: Record<string, string> = {
+    amb: 'Ambient',
+    ret: 'Return',
+    mix: 'Mixed',
+    cool: 'Cooler',
+    heat: 'Heater',
+    rel: 'Release',
+    r1: 'Room 1',
+    blower: 'Blower',
+    hum: 'Humidifier',
+  };
+
+  const suffixMap: Record<string, string> = {
+    cmd: 'Command',
+    t: 'Temp.',
+    h: 'Humid.',
+    p: 'Pres.',
+    co2: 'CO2',
+  };
+
+  const prefix = prefixMap[parts[0]] || (parts[0].charAt(0).toUpperCase() + parts[0].slice(1));
+  const suffix = suffixMap[parts[1]] || parts[1];
+  
+  return `${prefix} ${suffix}`;
+};
+
+// --- Helper: Assign Specific Colors ---
+const getLineColor = (key: string) => {
+  // Controls
+  if (key === 'mix_cmd') return '#94a3b8';    // Grey
+  if (key === 'cool_cmd') return '#38bdf8';   // Light Blue
+  if (key === 'heat_cmd') return '#ef4444';   // Red
+  if (key === 'hum_cmd') return '#22d3ee';    // Cyan / Blue
+  if (key === 'blower_cmd') return '#22c55e'; // Green
+  
+  // Sensors
+  if (key.endsWith('_t')) return '#3b82f6';   // Blue
+  if (key.endsWith('_h')) return '#f59e0b';   // Yellow / Orange
+  if (key.endsWith('_co2')) return '#10b981'; // Green
+  if (key.endsWith('_p')) return '#a855f7';   // Purple
+  
+  return '#ffffff'; // Fallback
 };
 
 export default function DataRecorderPanel() {
@@ -51,10 +100,8 @@ export default function DataRecorderPanel() {
   ]);
   const [chartData, setChartData] = useState<any[]>([]);
 
-  // Ref to track the most recent data without triggering interval resets
   const latestDataRef = useRef({ hvacData, actuators });
 
-  // Update ref whenever context data changes
   useEffect(() => {
     latestDataRef.current = { hvacData, actuators };
   }, [hvacData, actuators]);
@@ -96,7 +143,7 @@ export default function DataRecorderPanel() {
           // Mixed
           mix_t: liveHvac.economizer.temp,
           mix_h: liveHvac.economizer.hum,
-          mix_p: liveHvac.economizer.pressure || 0,
+          mix_co2: liveHvac.economizer.co2 || 0,
           // Cooling
           cool_t: liveHvac.afterCooling.temp,
           cool_h: liveHvac.afterCooling.hum,
@@ -116,8 +163,10 @@ export default function DataRecorderPanel() {
           hum_cmd: liveActuators?.humidifier || 0,
           mix_cmd: liveActuators?.intakeOpening || 0,
           // Zones (Mocked)
-          r1_t: 22.5,
-          r1_co2: 450,
+          r1_t: liveHvac.releaseAir.temp + 2.5,
+          r1_h: liveHvac.releaseAir.hum - 5,
+          r1_co2: (liveHvac.releaseAir.co2 || -26) + 26,
+
           vav1_cmd: 40,
         };
 
@@ -127,7 +176,6 @@ export default function DataRecorderPanel() {
         });
       };
 
-      // Record first point immediately on start
       recordPoint();
       interval = setInterval(recordPoint, timeStep * 1000);
     }
@@ -250,6 +298,10 @@ export default function DataRecorderPanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {activeCategories.map((catKey) => {
           const cat = (CATEGORIES as any)[catKey];
+          const isControls = catKey === 'controls';
+          
+          const rightAxisDomain = isControls ? [0, 1] : [0, 2000];
+
           return (
             <div
               key={catKey}
@@ -266,7 +318,7 @@ export default function DataRecorderPanel() {
 
               <div className="flex-1 w-full min-h-50">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={chartData} margin={{ top: 15, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       stroke="#1e293b"
@@ -279,11 +331,25 @@ export default function DataRecorderPanel() {
                       tickMargin={10}
                       hide={chartData.length === 0}
                     />
+                    
+                    {/* LEFT Y-AXIS */}
                     <YAxis
+                      yAxisId="left"
+                      orientation="left"
                       stroke="#475569"
                       fontSize={9}
-                      domain={["auto", "auto"]}
+                      domain={[0, 100]}
                     />
+                    
+                    {/* RIGHT Y-AXIS */}
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="#475569"
+                      fontSize={9}
+                      domain={rightAxisDomain}
+                    />
+
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#0f172a",
@@ -296,25 +362,51 @@ export default function DataRecorderPanel() {
                       iconType="circle"
                       wrapperStyle={{ fontSize: "10px", paddingTop: "10px" }}
                     />
-                    {cat.sensors.map((s: string, i: number) => (
-                      <Line
-                        key={s}
-                        type="monotone"
-                        dataKey={s}
-                        stroke={
-                          [
-                            `#06b6d4`,
-                            `#10b981`,
-                            `#f43f5e`,
-                            `#8b5cf6`,
-                            `#f59e0b`,
-                          ][i % 5]
-                        }
-                        strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
-                      />
-                    ))}
+                    
+                    {cat.sensors.map((s: string) => {
+                      const isRightAxis = s.endsWith('_co2') || 
+                                          s.endsWith('_p') || 
+                                          ['cool_cmd', 'heat_cmd', 'hum_cmd'].includes(s);
+
+                      // Get specific color once per line
+                      const lineColor = getLineColor(s);
+
+                      return (
+                        <Line
+                          key={s}
+                          yAxisId={isRightAxis ? "right" : "left"} 
+                          type="monotone"
+                          dataKey={s} 
+                          name={formatLegendName(s)} 
+                          stroke={lineColor} 
+                          strokeWidth={2}
+                          dot={false}
+                          isAnimationActive={false}
+                          // INLINED LABEL to explicitly force the fill color
+                          label={(props: any) => {
+                            const { x, y, value, index } = props;
+                            if (index === chartData.length - 1 && chartData.length > 0) {
+                              const formattedValue = typeof value === 'number' ? Number(value).toFixed(1) : value;
+                              return (
+                                <text 
+                                  x={x - 8} 
+                                  y={y} 
+                                  dy={-8} 
+                                  fill={lineColor} // Forces the text color to match exactly
+                                  fontSize={11} 
+                                  fontWeight="bold"
+                                  fontFamily="monospace"
+                                  textAnchor="end"
+                                >
+                                  {formattedValue}
+                                </text>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                      );
+                    })}
                   </LineChart>
                 </ResponsiveContainer>
               </div>

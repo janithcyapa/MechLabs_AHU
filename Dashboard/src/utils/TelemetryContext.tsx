@@ -133,6 +133,20 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
     return () => clearInterval(interval);
   }, [lastSeen]);
 
+  const sendCommand = (topic: string, payload: any) => {
+  if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+    ws.current.send(
+      JSON.stringify({
+        type: "command",
+        topic: topic,
+        payload: payload,
+      })
+    );
+  } else {
+    console.warn("Cannot send command, WebSocket is disconnected.");
+  }
+  };
+
   const hvacData: HVACSystemData = useMemo(() => {
     // Base mapping from MQTT topics to your strict interface
     const mappedData: HVACSystemData = {
@@ -172,6 +186,7 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
         actuators,
         systemStatus,
         isConnected,
+        sendCommand,
       }}
     >
       {children}

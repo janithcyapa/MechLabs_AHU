@@ -33,8 +33,8 @@ const uint32_t RELAY_ON_STATE = 1;
 const uint32_t RELAY_OFF_STATE = !RELAY_ON_STATE;
 
 // PWM Devices (Servos, RGB LED, Buzzer)
-PwmUtil servo_mix_damper(19, LEDC_CHANNEL_0, LEDC_TIMER_0);
-PwmUtil servo_main_blower(18, LEDC_CHANNEL_1, LEDC_TIMER_0);
+PwmUtil servo_mix_damper(18, LEDC_CHANNEL_0, LEDC_TIMER_0);
+PwmUtil servo_main_blower(19, LEDC_CHANNEL_1, LEDC_TIMER_0);
 
 PwmUtil led_red(27, LEDC_CHANNEL_2, LEDC_TIMER_1);
 PwmUtil led_green(26, LEDC_CHANNEL_3, LEDC_TIMER_1);
@@ -182,7 +182,7 @@ void on_mqtt_data(const char *topic, const char *data) {
     }
     if ((item = cJSON_GetObjectItem(root, "main_blower"))) {
         actuators.main_blower = (float)item->valuedouble;
-        servo_main_blower.set_angle_270((int)(actuators.main_blower * 2.7));
+        servo_main_blower.set_angle_180((int)(actuators.main_blower * 1.8));
     }
     if ((item = cJSON_GetObjectItem(root, "cool_coil"))) {
         actuators.cool_coil = (float)item->valuedouble;

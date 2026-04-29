@@ -61,7 +61,7 @@ hostname -I | awk '{print $1}'
 
 Data from ESP
 ```bash
-mosquitto_sub -h localhost -t "telemetry/#" -v
+mosquitto_sub -h localhost -t "ahu/#" -v
 ```
 
 Send to ESP
@@ -69,6 +69,9 @@ Send to ESP
 mosquitto_pub -h localhost -t "targets/esp_01" -m "26.5"
 ```
 
+```bash
+mosquitto_pub -h localhost -t "ahu/cmd" -m '{"mix_damper": 0.0, "cool_coil": 0.0, "heat_coil": 0.0, "humidifier": 0.0, "main_blower": 100.0}'
+```
 
 ESP SIM
 ```bash

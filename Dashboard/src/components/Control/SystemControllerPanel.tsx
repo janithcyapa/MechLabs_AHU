@@ -1,33 +1,64 @@
 
-import { useState } from 'react';
-import { FaSlidersH, FaRobot, FaPython, FaUpload, FaPlay } from 'react-icons/fa';
+import { useEffect, useState } from 'react';
+import { FaSlidersH, FaRobot,  FaUpload, FaPlay } from 'react-icons/fa';
 import { GiValve, GiSnowflake2, GiHotSurface, GiWaterDrop } from 'react-icons/gi';
-import ControlKnob from './ControlKnob';
+import { ToggleSwitch ,ControlKnob } from './ControlKnob';
 import SetpointInput from './SetPoint';
-
+import { useTelemetry } from '../../utils/TelemetryContext'; 
 
 const SystemControllerPanel = () => {
+  const { actuators, sendCommand } = useTelemetry();
   const [mode, setMode] = useState<'manual' | 'auto' | 'custom'>('manual');
 
   // Dynamic Rooms Setup (You can pass this array length via props later)
-  const dynamicRooms = ['room1', 'room2', 'room3', 'room4', 'room5'];
+  const dynamicRooms = ['room'];
 
   // State: Manual Controls
   const [manualCmd, setManualCmd] = useState<any>({
-    intakeOpening: 40, coolingCoil: 75, heatingCoil: 0, humidifier: 10, blower: 80,
-    ...dynamicRooms.reduce((acc, room) => ({ ...acc, [`vav_${room}`]: 50 }), {})
+    intakeOpening: 0, coolingCoil: 0, heatingCoil: 0, humidifier: 0, blower: 0,
+    ...dynamicRooms.reduce((acc, room) => ({ ...acc, [`vav_${room}`]: 0 }), {})
   });
 
   // State: Auto Setpoints
   const [setpoints, setSetpoints] = useState<any>({
-    releaseAir: { temp: 18.0, co2: 450 },
-    ...dynamicRooms.reduce((acc, room) => ({ ...acc, [room]: { temp: 24.0, co2: 600 } }), {})
+    releaseAir: { temp: 18.0, co2: 450, hum:50 },
+    ...dynamicRooms.reduce((acc, room) => ({ ...acc, [room]: { temp: 24.0, co2: 600 , hum:50 } }), {})
   });
 
   // State: Custom Python Script
   const [pythonScript, setPythonScript] = useState("# Define your custom HVAC control logic here\n# Available objects: sensors, actuators\n\ndef control_loop(sensors):\n    # Example: Simple proportional control\n    error = 24.0 - sensors['room1']['temp']\n    actuators['vavRoom1'] = max(0, min(100, error * 10))\n    return actuators\n");
 
-  const updateManual = (key: string, val: number) => setManualCmd((p: any) => ({ ...p, [key]: val }));
+  useEffect(() => {
+    if (actuators) {
+      setManualCmd((prev: any) => ({
+        ...prev,
+        intakeOpening: actuators.intakeOpening ?? prev.intakeOpening,
+        coolingCoil: actuators.coolingCoil ?? prev.coolingCoil,
+        heatingCoil: actuators.heatingCoil ?? prev.heatingCoil,
+        humidifier: actuators.humidifier ?? prev.humidifier,
+        blower: actuators.blower ?? prev.blower,
+      }));
+    }
+  }, [actuators]);
+  
+  const updateManual = (key: string, val: number) => {
+    setManualCmd((p: any) => ({ ...p, [key]: val }));
+
+    const hardwareKeys: Record<string, string> = {
+      intakeOpening: 'mix_damper',
+      coolingCoil: 'cool_coil',
+      heatingCoil: 'heat_coil',
+      humidifier: 'humidifier',
+      blower: 'main_blower',
+    };
+
+    const hwKey = hardwareKeys[key];
+    
+    if (hwKey) {
+      sendCommand("ahu/cmd", { [hwKey]: val });
+    }
+  };
+
   const updateSetpoint = (room: string, param: string, val: number) => {
     setSetpoints((p: any) => ({ ...p, [room]: { ...p[room], [param]: val } }));
   };
@@ -58,12 +89,12 @@ const SystemControllerPanel = () => {
           >
             <FaRobot /> Auto
           </button>
-          <button
+          {/* <button
             onClick={() => setMode('custom')}
             className={`flex items-center gap-2 px-6 py-2 rounded text-xs font-bold tracking-widest uppercase transition-all ${mode === 'custom' ? 'bg-purple-900/50 text-purple-400 shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
           >
             <FaPython /> Custom
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -77,9 +108,9 @@ const SystemControllerPanel = () => {
               <h3 className="text-sm text-slate-400 font-bold uppercase tracking-widest border-b border-slate-700 pb-2 mb-4">AHU Hardware Override</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 <ControlKnob label="Mix Damper" value={manualCmd.intakeOpening} onChange={(v: number) => updateManual('intakeOpening', v)} icon={GiValve} colorClass="text-slate-400" />
-                <ControlKnob label="Cooling Coil" isBinary={true} value={manualCmd.coolingCoil} onChange={(v: number) => updateManual('coolingCoil', v)} icon={GiSnowflake2} colorClass="text-sky-400" />
-                <ControlKnob label="Heating Coil" isBinary={true} value={manualCmd.heatingCoil} onChange={(v: number) => updateManual('heatingCoil', v)} icon={GiHotSurface} colorClass="text-red-400" />
-                <ControlKnob label="Humidifier" isBinary={true} value={manualCmd.humidifier} onChange={(v: number) => updateManual('humidifier', v)} icon={GiWaterDrop} colorClass="text-blue-400" />
+                <ToggleSwitch label="Cooling Coil" isBinary={true} value={manualCmd.coolingCoil} onChange={(v: number) => updateManual('coolingCoil', v)} icon={GiSnowflake2} colorClass="text-sky-400" />
+                <ToggleSwitch label="Heating Coil" isBinary={true} value={manualCmd.heatingCoil} onChange={(v: number) => updateManual('heatingCoil', v)} icon={GiHotSurface} colorClass="text-red-400" />
+                <ToggleSwitch label="Humidifier" isBinary={true} value={manualCmd.humidifier} onChange={(v: number) => updateManual('humidifier', v)} icon={GiWaterDrop} colorClass="text-blue-400" />
                 <ControlKnob label="Main Blower" value={manualCmd.blower} onChange={(v: number) => updateManual('blower', v)} icon={FaSlidersH} colorClass="text-green-400" />
               </div>
             </div>
@@ -107,8 +138,10 @@ const SystemControllerPanel = () => {
               <SetpointInput
                 label="AHU Release"
                 tempVal={setpoints.releaseAir.temp} co2Val={setpoints.releaseAir.co2}
+                humVal ={setpoints.releaseAir.hum}
                 onTempChange={(v: number) => updateSetpoint('releaseAir', 'temp', v)}
                 onCo2Change={(v: number) => updateSetpoint('releaseAir', 'co2', v)}
+                onHumChange={(v: number) => updateSetpoint('releaseAir', 'hum', v)}
               />
             </div>
 
@@ -123,13 +156,9 @@ const SystemControllerPanel = () => {
                   <SetpointInput
                     key={room}
                     label={`Zone ${idx + 1}`}
-
-                    // Values
                     tempVal={setpoints[room].temp}
-                    humVal={setpoints[room].hum || 50} // Added humidity
+                    humVal={setpoints[room].hum}
                     co2Val={setpoints[room].co2}
-
-                    // Handlers
                     onTempChange={(v: number) => updateSetpoint(room, 'temp', v)}
                     onHumChange={(v: number) => updateSetpoint(room, 'hum', v)} // Added handler
                     onCo2Change={(v: number) => updateSetpoint(room, 'co2', v)}

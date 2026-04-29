@@ -3,16 +3,27 @@ import {  FaTachometerAlt, FaThermometerHalf } from 'react-icons/fa';
 import { MdOutlineCo2 } from 'react-icons/md';
 import { WiHumidity } from 'react-icons/wi';
 
-export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing }: any) => {
+export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing, isBooleanControl= false}: any) => {
   // --- Math for the SVG Dial ---
-  const radius = 34; // Slightly smaller radius to accommodate the thicker stroke
+  const radius = 34;
   const circumference = 2 * Math.PI * radius;
-  const clampedValue = Math.max(0, Math.min(100, controlValue || 0)); 
-  const strokeDashoffset = circumference - (clampedValue / 100) * circumference;
+
+  // 1. Determine the numeric value for the dial
+  // If boolean: truthy = 100, falsy = 0. Otherwise, clamp the 0-100 range.
+  const effectiveValue = isBooleanControl 
+    ? (controlValue ? 100 : 0) 
+    : Math.max(0, Math.min(100, controlValue || 0));
+
+  const strokeDashoffset = circumference - (effectiveValue / 100) * circumference;
+
+  // 2. Determine the text display
+  const displayLabel = isBooleanControl 
+    ? (controlValue ? "ON" : "OFF") 
+    : `${effectiveValue}%`;
 
   return (
     <div className="flex flex-col items-center justify-between relative z-10 p-3 rounded-xl bg-slate-700/40 shadow-xl min-w-28 h-full">
-      <div className="text-xs uppercase text-center mb-3">
+      <div className="text-xs uppercase text-center mb-3 text-slate-400">
         {label}
       </div>
 
@@ -20,7 +31,6 @@ export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing }: a
       <div className={`relative w-20 h-20 flex items-center justify-center ${colorRing}`}>
         
         {/* SVG Progress Ring */}
-        {/* rotate-90 starts the dial at 6 o'clock (the bottom) */}
         <svg className="absolute inset-0 w-full h-full rotate-90 drop-shadow-md z-20">
           {/* Faint Background Track */}
           <circle
@@ -48,20 +58,18 @@ export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing }: a
         </svg>
 
         {/* Center Inner Circle */}
-        {/* Shrunk slightly to 60px to fit inside the thicker 8px stroke */}
         <div className="w-15 h-15 rounded-full flex items-center justify-center bg-[#0f172a] shadow-[inset_0_4px_10px_rgba(0,0,0,0.6)] z-10">
           <Icon className="text-2xl text-slate-200 drop-shadow-sm" />
         </div>
       </div>
 
-      {/* Percentage Text - Now colored by {colorRing} */}
-      <div className={`text-xl font-mono font-bold tracking-wider mt-3 ${colorRing} `}>
-        {clampedValue}%
+      {/* Status Text - Toggles between "ON/OFF" and "X%" */}
+      <div className={`text-xl font-mono font-bold tracking-wider mt-3 ${colorRing}`}>
+        {displayLabel}
       </div>
     </div>
   );
 };
-
 
 export const SensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", width = 'w-full', showDuct = true }: any) => {
 

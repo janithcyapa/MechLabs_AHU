@@ -58,7 +58,7 @@ export default function DataRecorder() {
           onReset={handleReset}
           onSave={handleSave}
         /> */}
-        <ModeSelector/>
+        {/* <ModeSelector/> */}
         <AmbientAirCluster />
       </div>
 

@@ -13,6 +13,7 @@ export interface TelemetryContextType {
     hvacData: HVACSystemData;
     actuators: ControlSignals | null;
     systemStatus: { online: boolean; uptime: number };
+    sendCommand: (topic: string, payload: any) => void;
     isConnected: boolean;
 }
 

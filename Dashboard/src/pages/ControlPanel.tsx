@@ -18,7 +18,7 @@ export default function SystemController() {
           <p className="text-slate-500 text-sm ml-6 uppercase tracking-wider font-mono">System Online • Mode: Auto</p>
         </div>
         <div className="flex-1"></div>
-        <ModeSelector mode={mode} setMode={setMode} />
+        {/* <ModeSelector mode={mode} setMode={setMode} /> */}
         <AmbientAirCluster />
       </div>
 
