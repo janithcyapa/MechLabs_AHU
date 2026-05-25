@@ -11,7 +11,7 @@
 // Custom Utilities & Sensors
 #include "util_pwm.hpp"
 #include "util_i2c.hpp"
-#include "util_mqtt.hpp"
+#include "util_server.hpp"
 #include "util_wifi.hpp"
 #include "sens_pca9548a.hpp"
 #include "sens_aht21.hpp"
@@ -142,10 +142,8 @@ void read_publish_aht_ens(uint8_t ch, sens_aht21::AHT21 &aht, sens_ens160::ENS16
     }
 
     char payload[256];
-    snprintf(payload, sizeof(payload), "{\"ts\":%lu, \"temp\":%.2f, \"hum\":%.2f, \"co2\":%d, \"pressure\":null}", ts, t, h, co2);
-    char topic[64];
-    snprintf(topic, sizeof(topic), "ahu/telemetry/%s", topic_suffix);
-    MqttUtil::publish(topic, payload);
+    snprintf(payload, sizeof(payload), "{\"topic\":\"ahu/telemetry/%s\", \"ts\":%u, \"temp\":%.2f, \"hum\":%.2f, \"co2\":%d, \"pressure\":null}", topic_suffix, ts, t, h, co2);
+    ServerUtil::send_ws_data(payload);
 }
 
 void read_publish_bme(uint8_t ch, sens_bme280::BME280 &bme, const char* topic_suffix, uint32_t ts, bool &err_flag) {
@@ -165,17 +163,15 @@ void read_publish_bme(uint8_t ch, sens_bme280::BME280 &bme, const char* topic_su
     }
 
     char payload[256];
-    snprintf(payload, sizeof(payload), "{\"ts\":%lu, \"temp\":%.2f, \"hum\":%.2f, \"co2\":null, \"pressure\":%.2f}", ts, t, h, p);
-    char topic[64];
-    snprintf(topic, sizeof(topic), "ahu/telemetry/%s", topic_suffix);
-    MqttUtil::publish(topic, payload);
+    snprintf(payload, sizeof(payload), "{\"topic\":\"ahu/telemetry/%s\", \"ts\":%u, \"temp\":%.2f, \"hum\":%.2f, \"co2\":null, \"pressure\":%.2f}", topic_suffix, ts, t, h, p);
+    ServerUtil::send_ws_data(payload);
 }
 
 // ==========================================
-// 5. MQTT COMMAND HANDLER
+// 5. WEBSOCKET COMMAND HANDLER
 // ==========================================
-void on_mqtt_data(const char *topic, const char *data) {
-    ESP_LOGI(TAG, "COMMAND RECEIVED | Topic: %s | Payload: %s", topic, data);
+void on_ws_cmd(const char *data) {
+    ESP_LOGI(TAG, "COMMAND RECEIVED | Payload: %s", data);
     cJSON *root = cJSON_Parse(data);
     if (root == NULL) return;
 
@@ -247,26 +243,18 @@ extern "C" void app_main(void) {
     set_rgb(100, 100, 0); // Yellow = Booting
     play_sound_startup();
 
-    // Init Communications
-    WifiUtil::init_wifi();
-    while (!WifiUtil::is_connected()) {
-        vTaskDelay(pdMS_TO_TICKS(100)); 
-    }
-    set_rgb(0, 0, 100);   // Blue = WiFi Connected
+    // Init Communications (Access Point mode)
+    WifiUtil::init_ap("MechLabs_AHU", "12345678", 5);
+    set_rgb(0, 0, 100);   // Blue = WiFi AP Started
     play_tone(1500, 150); // Short beep
 
-    MqttUtil::subscribe("ahu/cmd", on_mqtt_data);
+    ServerUtil::init();
+    ServerUtil::set_cmd_callback(on_ws_cmd);
 
-    MqttUtil::init("mqtt://10.65.114.123");
-
-    while (!MqttUtil::is_connected()) {
-        vTaskDelay(pdMS_TO_TICKS(100)); 
-    }
-    set_rgb(0, 100, 0);   // Green = MQTT Connected
+    set_rgb(0, 100, 0);   // Green = Server Started
     play_tone(2000, 250); // High beep
 
-    MqttUtil::publish("ahu/status", "online");
-    ESP_LOGI(TAG, "MQTT connected! Starting telemetry loop.");
+    ESP_LOGI(TAG, "Server running! Starting telemetry loop.");
 
     // Init I2C & MUX
     i2c_util::i2c_init();
@@ -352,14 +340,13 @@ extern "C" void app_main(void) {
         // 2. Publish Actuator States & Heartbeat
         char json_payload[256];
         snprintf(json_payload, sizeof(json_payload), 
-                 "{\"ts\":%lu, \"mix_damper\":%.1f, \"cool_coil\":%.1f, \"heat_coil\":%.1f, \"humidifier\":%.1f, \"main_blower\":%.1f}", 
+                 "{\"topic\":\"ahu/telemetry/actuators\", \"ts\":%u, \"mix_damper\":%.1f, \"cool_coil\":%.1f, \"heat_coil\":%.1f, \"humidifier\":%.1f, \"main_blower\":%.1f}", 
                  uptime_ms, actuators.mix_damper, actuators.cool_coil, actuators.heat_coil, actuators.humidifier, actuators.main_blower);
-        MqttUtil::publish("ahu/telemetry/actuators", json_payload);
+        ServerUtil::send_ws_data(json_payload);
 
-        // Note: Changed to 'any_sensor_error' here
-        snprintf(json_payload, sizeof(json_payload), "{\"uptime_s\":%lu, \"status\":\"%s\"}", 
+        snprintf(json_payload, sizeof(json_payload), "{\"topic\":\"ahu/heartbeat\", \"uptime_s\":%u, \"status\":\"%s\"}", 
                  uptime_ms / 1000, any_sensor_error ? "degraded" : "running");
-        MqttUtil::publish("ahu/heartbeat", json_payload);
+        ServerUtil::send_ws_data(json_payload);
 
         // 3. Status Output Handling
         if (any_sensor_error) {

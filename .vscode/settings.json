@@ -1,4 +1,6 @@
 {
     "idf.currentSetup": "/home/jazz/.espressif/v6.0/esp-idf",
-    "idf.port": "/dev/ttyUSB0"
+    "idf.port": "/dev/ttyUSB0",
+    "idf.buildPath": "${workspaceFolder}/AHU_Firmware/build",
+    "idf.sdkconfigFilePath": "${workspaceFolder}/AHU_Firmware/sdkconfig",
 }

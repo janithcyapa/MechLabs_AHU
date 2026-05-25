@@ -1,0 +1,15 @@
+{
+  "configurations": [
+    {
+      "name": "ESP-IDF",
+      "compilerPath": "/home/jazz/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc",
+      "cStandard": "c11",
+      "cppStandard": "gnu++2b",
+      "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+      "browse": {
+        "limitSymbolsToIncludedHeaders": false
+      }
+    }
+  ],
+  "version": 4
+}
