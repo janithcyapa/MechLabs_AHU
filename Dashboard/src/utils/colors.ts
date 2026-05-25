@@ -18,5 +18,6 @@ export const getCo2Color = (c: number) => {
   };
   
 export const getPressureColor = (p: number) => {
+    if (p) return 'text-purple-400';
     return 'text-purple-400'; 
   };

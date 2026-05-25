@@ -28,6 +28,7 @@ static const char *TAG = "AHU_MAIN";
 #define PIN_RELAY_HEAT 33
 #define PIN_RELAY_HUM  32
 #define PIN_RELAY_EXTRA 23
+#define PIN_RELAY_HUM_BACKUP 14
 
 const uint32_t RELAY_ON_STATE = 1; 
 const uint32_t RELAY_OFF_STATE = !RELAY_ON_STATE;
@@ -48,6 +49,7 @@ struct ActuatorState {
     float heat_coil = 0.0;
     float humidifier = 0.0;
     float main_blower = 0.0;
+    bool backup_hum_active = false;
 } actuators;
 
 // ==========================================
@@ -70,6 +72,9 @@ void init_relays() {
         gpio_set_direction(relays[i], GPIO_MODE_OUTPUT);
         gpio_set_level(relays[i], RELAY_OFF_STATE); 
     }
+    gpio_reset_pin((gpio_num_t)PIN_RELAY_HUM_BACKUP);
+    gpio_set_direction((gpio_num_t)PIN_RELAY_HUM_BACKUP, GPIO_MODE_OUTPUT);
+    gpio_set_level((gpio_num_t)PIN_RELAY_HUM_BACKUP, 1); // Default to HIGH (button unpressed)
 }
 
 void set_rgb(float r_percent, float g_percent, float b_percent) {
@@ -178,11 +183,26 @@ void on_mqtt_data(const char *topic, const char *data) {
 
     if ((item = cJSON_GetObjectItem(root, "mix_damper"))) {
         actuators.mix_damper = (float)item->valuedouble;
-        servo_mix_damper.set_angle_180((int)(actuators.mix_damper * 1.8)); // map 0-100% to 0-180deg
+        static int current_mix_angle = 80;
+        int target_angle = 80 - (int)(actuators.mix_damper * 0.8);
+
+        while (current_mix_angle != target_angle) {
+            current_mix_angle += (current_mix_angle < target_angle) ? 1 : -1;
+            servo_mix_damper.set_angle_180(current_mix_angle);
+            vTaskDelay(pdMS_TO_TICKS(10)); // Increase this number to move even slower
+        }
     }
     if ((item = cJSON_GetObjectItem(root, "main_blower"))) {
         actuators.main_blower = (float)item->valuedouble;
-        servo_main_blower.set_angle_270((int)(actuators.main_blower * 2.7));
+        // servo_main_blower.set_angle_270((int)(actuators.main_blower * 2.7));
+        static int current_blower_angle = 0;
+        int target_angle = (int)(actuators.main_blower * 2.7);
+
+        while (current_blower_angle != target_angle) {
+            current_blower_angle += (current_blower_angle < target_angle) ? 1 : -1;
+            servo_main_blower.set_angle_270(current_blower_angle);
+            vTaskDelay(pdMS_TO_TICKS(10)); // Increase this number to move even slower
+        }
     }
     if ((item = cJSON_GetObjectItem(root, "cool_coil"))) {
         actuators.cool_coil = (float)item->valuedouble;
@@ -194,7 +214,18 @@ void on_mqtt_data(const char *topic, const char *data) {
     }
     if ((item = cJSON_GetObjectItem(root, "humidifier"))) {
         actuators.humidifier = (float)item->valuedouble;
+        bool target_state = actuators.humidifier > 0;
+        // 1. Standard Relay (Continuous)
         gpio_set_level((gpio_num_t)PIN_RELAY_HUM, actuators.humidifier > 0 ? RELAY_ON_STATE : RELAY_OFF_STATE);
+
+        // 2. Backup Mist Maker (Momentary GND pulse ONLY when state changes)
+        // if (target_state != actuators.backup_hum_active) {
+            gpio_set_level((gpio_num_t)PIN_RELAY_HUM_BACKUP, 0); // Pull to GND (press button)
+            vTaskDelay(pdMS_TO_TICKS(500));                      // Hold for 150ms
+            gpio_set_level((gpio_num_t)PIN_RELAY_HUM_BACKUP, 1); // Release to HIGH
+            
+            actuators.backup_hum_active = target_state;          // Save current state
+        // }
     }
 
     cJSON_Delete(root);
@@ -218,6 +249,12 @@ extern "C" void app_main(void) {
 
     // Init Communications
     WifiUtil::init_wifi();
+    while (!WifiUtil::is_connected()) {
+        vTaskDelay(pdMS_TO_TICKS(100)); 
+    }
+    set_rgb(0, 0, 100);   // Blue = WiFi Connected
+    play_tone(1500, 150); // Short beep
+
     MqttUtil::subscribe("ahu/cmd", on_mqtt_data);
 
     MqttUtil::init("mqtt://10.65.114.123");
@@ -225,6 +262,9 @@ extern "C" void app_main(void) {
     while (!MqttUtil::is_connected()) {
         vTaskDelay(pdMS_TO_TICKS(100)); 
     }
+    set_rgb(0, 100, 0);   // Green = MQTT Connected
+    play_tone(2000, 250); // High beep
+
     MqttUtil::publish("ahu/status", "online");
     ESP_LOGI(TAG, "MQTT connected! Starting telemetry loop.");
 
@@ -235,30 +275,37 @@ extern "C" void app_main(void) {
 
     // Init Sensors Once
     ESP_LOGI(TAG, "--- Initializing Sensors ---");
-    
+    vTaskDelay(pdMS_TO_TICKS(150));
+
     // CH7: Return
     select_mux_channel(7);
     aht_return.init(bus); ens_return.init(bus);
-    
+    vTaskDelay(pdMS_TO_TICKS(50));
+
     // CH6: Mixed
     select_mux_channel(6);
     aht_mixed.init(bus); ens_mixed.init(bus);
+    vTaskDelay(pdMS_TO_TICKS(50));
     
     // CH5: Cooler
     select_mux_channel(5);
     bme_cooler.init(bus);
+    vTaskDelay(pdMS_TO_TICKS(50));
     
     // CH4: Heater
     select_mux_channel(4);
     bme_heater.init(bus);
+    vTaskDelay(pdMS_TO_TICKS(50));
     
     // CH3: Release
     select_mux_channel(3);
     aht_release.init(bus); ens_release.init(bus);
+    vTaskDelay(pdMS_TO_TICKS(50));
 
     // CH2: Outdoor
     select_mux_channel(2);
     aht_outdoor.init(bus); ens_outdoor.init(bus);
+    vTaskDelay(pdMS_TO_TICKS(50));
 
     ESP_LOGI(TAG, "--- Sensor Init Complete. Starting Main Loop ---");
     set_rgb(0, 100, 0); // Green = Running smoothly

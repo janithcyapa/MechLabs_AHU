@@ -3,6 +3,9 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_mqtt import FastMQTT, MQTTConfig
 from typing import List
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
 
 app = FastAPI()
 
@@ -93,3 +96,16 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+
+REACT_BUILD_DIR = "./dist"
+app.mount("/assets", StaticFiles(directory=os.path.join(REACT_BUILD_DIR, "assets")), name="assets")
+
+@app.get("/{catchall:path}")
+def serve_react_app(catchall: str):
+    file_path = os.path.join(REACT_BUILD_DIR, catchall)
+    # If the user asks for a specific file (like favicon.ico), serve it
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    # Otherwise, return the main index.html (React handles the routing)
+    return FileResponse(os.path.join(REACT_BUILD_DIR, "index.html"))
