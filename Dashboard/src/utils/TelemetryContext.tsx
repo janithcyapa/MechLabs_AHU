@@ -37,9 +37,11 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
   const [actuators, setActuators] = useState<ControlSignals | null>(null);
   const [systemStatus, setSystemStatus] = useState<{
     online: boolean;
+    roomOnline: boolean;
     uptime: number;
   }>({
     online: false,
+    roomOnline: false,
     uptime: 0,
   });
   const [lastSeen, setLastSeen] = useState<number>(Date.now());
@@ -149,7 +151,10 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
       afterCooling: telemetry["ahu/telemetry/cooler"] || defaultSensor,
       afterHeating: telemetry["ahu/telemetry/heater"] || defaultSensor,
       return: telemetry["ahu/telemetry/return"] || defaultSensor,
-      releaseAir: telemetry["ahu/telemetry/release"] || defaultSensor,
+      releaseAir: {
+        ...(telemetry["ahu/telemetry/release"] || defaultSensor),
+        flowrate: telemetry["ahu/telemetry/release_flow"]?.flowrate
+      },
     };
 
     // Dynamically map room topics to "room[X]"

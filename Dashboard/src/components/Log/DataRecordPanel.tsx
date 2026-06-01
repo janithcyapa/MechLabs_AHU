@@ -30,7 +30,7 @@ const CATEGORIES = {
   mixed: { label: "Mixed Air", sensors: ["mix_t", "mix_h", "mix_co2"] },
   cooled: { label: "Cooled Air", sensors: ["cool_t", "cool_h", "cool_p"] },
   heated: { label: "Heated Air", sensors: ["heat_t", "heat_h", "heat_p"] },
-  release: { label: "Release Air", sensors: ["rel_t", "rel_h", "rel_co2"] },
+  release: { label: "Release Air", sensors: ["rel_t", "rel_h", "rel_co2", "rel_flow"] },
   rooms: {
     label: "Zones/Rooms",
     sensors: ["r1_t", "r1_h", "r1_co2", "r2_t", "r2_h", "r2_co2"],
@@ -65,6 +65,7 @@ const formatLegendName = (key: string) => {
     h: 'Humid.',
     p: 'Pres.',
     co2: 'CO2',
+    flow: 'Flow',
   };
 
   const prefix = prefixMap[parts[0]] || (parts[0].charAt(0).toUpperCase() + parts[0].slice(1));
@@ -157,6 +158,7 @@ export default function DataRecorderPanel() {
           rel_t: liveHvac.releaseAir.temp,
           rel_h: liveHvac.releaseAir.hum,
           rel_co2: liveHvac.releaseAir.co2 || 0,
+          rel_flow: liveHvac.releaseAir.flowrate || 0,
           // Controls (Actuators)
           blower_cmd: liveActuators?.blower || 0,
           cool_cmd: liveActuators?.coolingCoil || 0,

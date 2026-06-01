@@ -250,7 +250,7 @@ extern "C" void app_main(void) {
     play_sound_startup();
 
     // Init Communications (Access Point mode)
-    WifiUtil::init_ap("MechLabs_AHU", "12345678", 5);
+    WifiUtil::init_ap(CONFIG_ESP_WIFI_SSID, CONFIG_ESP_WIFI_PASSWORD, 5);
     set_rgb(0, 0, 100);   // Blue = WiFi AP Started
     play_tone(1500, 150); // Short beep
 

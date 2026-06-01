@@ -113,6 +113,7 @@ export default function ScadaHVAC() {
                     temp={hvacData.releaseAir.temp}
                     hum={hvacData.releaseAir.hum}
                     co2={hvacData.releaseAir.co2}
+                    flowrate={hvacData.releaseAir.flowrate}
                     duct="bg-cyan-900/40" // Conditioned supply air
                 />
 

@@ -11,6 +11,7 @@
 #include "sens_ens160.hpp"
 #include "util_i2c.hpp"
 #include "util_wifi.hpp"
+#include "esp_adc/adc_oneshot.h"
 
 static const char *TAG = "ROOM_NODE";
 
@@ -60,7 +61,7 @@ static void send_telemetry(const char *room_name, float temp, float hum,
 extern "C" void app_main(void) {
   ESP_LOGI(TAG, "Starting Room Sensor Node...");
 
-  WifiUtil::init_wifi("MechLabs_AHU", "12345678");
+  WifiUtil::init_wifi(CONFIG_ESP_WIFI_SSID, CONFIG_ESP_WIFI_PASSWORD);
 
   // Wait for Wi-Fi connection
   while (!WifiUtil::is_connected()) {
@@ -88,6 +89,21 @@ extern "C" void app_main(void) {
   ens_side2.init(bus);
 
   vTaskDelay(pdMS_TO_TICKS(500));
+
+  // Init ADC for Flowrate (MPXV7002 on D34 / ADC1_CH6)
+  adc_oneshot_unit_handle_t adc1_handle;
+  adc_oneshot_unit_init_cfg_t init_config1 = {
+      .unit_id = ADC_UNIT_1,
+      .clk_src = ADC_RTC_CLK_SRC_DEFAULT,
+      .ulp_mode = ADC_ULP_MODE_DISABLE,
+  };
+  ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &adc1_handle));
+
+  adc_oneshot_chan_cfg_t adc_config = {
+      .atten = ADC_ATTEN_DB_12, // 0-3.3V range approx
+      .bitwidth = ADC_BITWIDTH_DEFAULT,
+  };
+  ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_6, &adc_config));
 
   const TickType_t xFrequency = pdMS_TO_TICKS(5000);
   TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -124,6 +140,28 @@ extern "C" void app_main(void) {
     }
     // Always send telemetry so temperature/humidity is visible
     send_telemetry("roomRight", temp, hum, co2_2);
+
+    // Read ADC and calculate Flowrate
+    int adc_raw = 0;
+    adc_oneshot_read(adc1_handle, ADC_CHANNEL_6, &adc_raw);
+    
+    // MPXV7002 outputs Vcc/2 (approx 1.65V) at 0 kPa differential.
+    // ESP32 ADC (12dB) max is ~3.1V, so 1.65V is around 2100-2200.
+    float voltage = (float)adc_raw * (3.3f / 4095.0f);
+    float pressure = (voltage - 1.65f) * 1.0f; // placeholder scaling for kPa
+    float flowrate = 0.0f;
+    if (pressure > 0.05f) { // simple deadband
+        flowrate = pressure * 15.0f; // placeholder calibration to L/s
+    }
+
+    if (esp_websocket_client_is_connected(client)) {
+        char payload[256];
+        uint32_t uptime_ms = (uint32_t)(xTaskGetTickCount() * portTICK_PERIOD_MS);
+        snprintf(payload, sizeof(payload),
+                 "{\"topic\":\"ahu/telemetry/release_flow\", \"ts\":%lu, \"flowrate\":%.2f}",
+                 uptime_ms, flowrate);
+        esp_websocket_client_send_text(client, payload, strlen(payload), portMAX_DELAY);
+    }
 
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
   }

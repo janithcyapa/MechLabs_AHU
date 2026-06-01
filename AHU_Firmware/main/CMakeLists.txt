@@ -11,6 +11,7 @@ idf_component_register(
     INCLUDE_DIRS "."
     REQUIRES
     cjson 
+    esp_adc
     util_i2c
     sens_aht21
     sens_ens160

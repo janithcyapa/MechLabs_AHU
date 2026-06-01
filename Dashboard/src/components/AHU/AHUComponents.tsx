@@ -71,10 +71,10 @@ export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing, isB
   );
 };
 
-export const SensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", width = 'w-full', showDuct = true }: any) => {
+export const SensorBlock = ({ label = "", temp, hum, co2, pressure, flowrate, duct = "", width = 'w-full', showDuct = true }: any) => {
 
   // If no sensors are provided at all, we can hide the whole box, or just render the duct.
-  const hasReadings = temp != null || hum != null || co2 != null || pressure != null;
+  const hasReadings = temp != null || hum != null || co2 != null || pressure != null || flowrate != null;
 
   return (
     <div className={`min-w-25 ${width} relative flex flex-col justify-center items-center`}>
@@ -119,6 +119,14 @@ export const SensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", w
               </div>
             )}
 
+            {/* Flowrate */}
+            {flowrate != null && (
+              <div className={`flex items-center justify-between gap-4 py-1.5 text-blue-300`}>
+                <FaTachometerAlt className="text-[12px]" />
+                <span className="font-mono font-bold text-sm tracking-tighter">{flowrate.toFixed(1)} L/s</span>
+              </div>
+            )}
+
           </div>
         )}
       </div>
@@ -126,9 +134,9 @@ export const SensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", w
   );
 };
 
-export const VerticalSensorBlock = ({ label = "", temp, hum, co2, pressure, duct = "", height = 'h-32', showDuct = true }: any) => {
+export const VerticalSensorBlock = ({ label = "", temp, hum, co2, pressure, flowrate, duct = "", height = 'h-32', showDuct = true }: any) => {
 
-  const hasReadings = temp != null || hum != null || co2 != null || pressure != null;
+  const hasReadings = temp != null || hum != null || co2 != null || pressure != null || flowrate != null;
 
   return (
     <div className={`relative flex items-center justify-center ${height} w-12`}>
@@ -175,6 +183,14 @@ export const VerticalSensorBlock = ({ label = "", temp, hum, co2, pressure, duct
             <div className={`flex items-center justify-between gap-4 py-1.5 ${getPressureColor(pressure)}`}>
               <FaTachometerAlt className="text-[12px]" />
               <span className="font-mono font-bold text-sm tracking-tighter">{pressure}Pa</span>
+            </div>
+          )}
+
+          {/* Flowrate */}
+          {flowrate != null && (
+            <div className={`flex items-center justify-between gap-4 py-1.5 text-blue-300`}>
+              <FaTachometerAlt className="text-[12px]" />
+              <span className="font-mono font-bold text-sm tracking-tighter">{flowrate.toFixed(1)} L/s</span>
             </div>
           )}
 

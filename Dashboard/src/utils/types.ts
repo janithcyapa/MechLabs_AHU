@@ -4,6 +4,7 @@ export interface SensorData {
     hum: number;
     co2?: number;
     pressure?: number;
+    flowrate?: number;
 }
 
 export type TelemetryState = Record<string, SensorData>;
@@ -12,7 +13,7 @@ export interface TelemetryContextType {
     telemetry: TelemetryState;
     hvacData: HVACSystemData;
     actuators: ControlSignals | null;
-    systemStatus: { online: boolean; uptime: number };
+    systemStatus: { online: boolean; roomOnline: boolean; uptime: number };
     sendCommand: (topic: string, payload: any) => void;
     isConnected: boolean;
 }
