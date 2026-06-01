@@ -53,43 +53,38 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
     let isMounted = true;
 
     const connectWebSocket = () => {
-      ws.current = new WebSocket("ws://localhost:8000/ws");
+      // Connect directly to the ESP Access Point IP
+      ws.current = new WebSocket("ws://192.168.4.1/ws");
 
       ws.current.onopen = () => {
-        console.log("WebSocket Connected");
+        console.log("WebSocket Connected to ESP");
         if (isMounted) setIsConnected(true);
       };
 
       ws.current.onmessage = (event: MessageEvent) => {
         try {
-          const message = JSON.parse(event.data) as WebSocketMessage;
-          const { topic, data }: any = message;
+          const message = JSON.parse(event.data);
+          const topic = message.topic;
 
-          // if (topic === "ahu/status") {
-          //     setSystemStatus(prev => ({ ...prev, online: data === "online" }));
-          // }
-          // else
           if (topic === "ahu/heartbeat") {
             setSystemStatus((prev) => ({
               ...prev,
-              uptime: data.uptime_s,
+              uptime: message.uptime_s,
               online: true,
             }));
             setLastSeen(Date.now());
           } else if (topic === "ahu/telemetry/actuators") {
             setActuators({
-              intakeOpening: data.mix_damper,
-              coolingCoil: data.cool_coil,
-              heatingCoil: data.heat_coil,
-              humidifier: data.humidifier,
-              blower: data.main_blower,
+              intakeOpening: message.mix_damper,
+              coolingCoil: message.cool_coil,
+              heatingCoil: message.heat_coil,
+              humidifier: message.humidifier,
+              blower: message.main_blower,
             });
-          }
-
-          if (message.type === "telemetry" && message.topic && message.data) {
+          } else if (topic && topic.startsWith("ahu/telemetry/")) {
             setTelemetry((prev) => ({
               ...prev,
-              [message.topic as string]: message.data!,
+              [topic]: message,
             }));
           }
         } catch (error) {
@@ -135,13 +130,8 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
 
   const sendCommand = (topic: string, payload: any) => {
   if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-    ws.current.send(
-      JSON.stringify({
-        type: "command",
-        topic: topic,
-        payload: payload,
-      })
-    );
+    // ESP firmware expects the command payload as a flat JSON string
+    ws.current.send(JSON.stringify(payload));
   } else {
     console.warn("Cannot send command, WebSocket is disconnected.");
   }

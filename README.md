@@ -9,26 +9,14 @@ A lightweight, high-performance IoT ecosystem optimized for low-power hardware (
 ### 1. Edge Layer (The "Spokes")
 * **Hardware:** Multiple ESP32 Microcontrollers.
 * **Framework:** **ESP-IDF**.
-* **Protocol:** **MQTT** for lightweight messaging.
+* **Protocol:** **WebSockets** for real-time telemetry and commands.
 * **Data Format:** **cJSON** for structured telemetry and target command parsing.
-* **Discovery:** **mDNS** for automatic Hub discovery.
+* **Network:** ESP runs in AP (Access Point) mode, hosting its own Wi-Fi network (`MechLabs_AHU`).
 
-### 2. Messaging Layer (The "Post Office")
-* **Broker:** **Eclipse Mosquitto** (Installed via `apt` or `dnf`).
-* **Configuration:** Minimalist local broker config.
-* **Role:** High-speed message routing between ESPs and the Backend.
-
-### 3. Backend Layer (The "Orchestrator")
-* **Framework:** **FastAPI** (Python 3.10+).
-* **MQTT Driver:** `fastapi-mqtt` (Async-based).
-* **Real-time Push:** **WebSockets** for frontend synchronization.
-* **Database:** **SQLite** (Single-file, Zero-config).
-    * *Recording Logic:* When enabled via UI, the backend pipes MQTT streams into the SQLite database file (`telemetry.db`).
-
-### 4. Frontend Layer (The "Dashboard")
+### 2. Frontend Layer (The "Dashboard")
 * **Framework:** **React** (Vite).
-* **Optimization:** Pre-compiled static build (`npm run build`).
-* **Serving:** Served directly by FastAPI using `StaticFiles`, eliminating the need for a separate Nginx or Node server.
+* **Communication:** Connects directly to the ESP Access Point via WebSockets (`ws://192.168.4.1/ws`).
+* **Real-time Control:** Sends commands directly to the hardware without intermediary brokers or backends.
 
 ---
 
@@ -37,32 +25,32 @@ A lightweight, high-performance IoT ecosystem optimized for low-power hardware (
 To move this project to a new device (like a Pi Zero), follow these steps:
 
 ### Install System Dependencies
-On the Pi Zero / Linux host:
+On your laptop / host:
 ```bash
-sudo apt update
-sudo apt install mosquitto mosquitto-clients python3-pip
-```
-### Run Mosquitto Client
-```bash
-sudo systemctl start mosquitto
+# Make sure you have Node.js and npm installed
+cd Dashboard
+npm install
 ```
 
-### Run FAST API
+### Run the Dashboard
 ```bash
-cd FastAPi/
-fastapi dev main.py
+./start_hvac.sh
+# Or manually run:
+# cd Dashboard && npm run dev
 ```
 
-# HVAC System MQTT Topic Architecture
+*Note: Ensure your device is connected to the `MechLabs_AHU` Wi-Fi hotspot to receive data from the ESP.*
+
+# HVAC System WebSocket Data Architecture
 
 ## 📖 Overview
-This outlines the MQTT topic schema and JSON payload structures for the Live Monitoring HVAC dashboard. 
+This outlines the JSON payload structures for the Live Monitoring HVAC dashboard. 
 
-To optimize network efficiency and ensure simultaneous data updates on the frontend, this architecture groups related sensor and actuator data into single **JSON objects**. 
+To optimize network efficiency and ensure simultaneous data updates on the frontend, this architecture groups related sensor and actuator data into single **JSON objects** transmitted over WebSockets.
 
-**Topic Structure:** `[location]/[data_direction]/[component]`
-* **`telemetry`**: Data sent from the ESP32 to the Server.
-* **`cmd`**: Commands sent from the Server to the ESP32.
+**Data Flow:**
+* **`telemetry`**: Data sent from the ESP32 to the Dashboard via WebSocket.
+* **`cmd`**: Commands sent from the Dashboard to the ESP32 via WebSocket.
 
 ---
 

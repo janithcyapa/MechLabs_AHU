@@ -142,7 +142,7 @@ void read_publish_aht_ens(uint8_t ch, sens_aht21::AHT21 &aht, sens_ens160::ENS16
     }
 
     char payload[256];
-    snprintf(payload, sizeof(payload), "{\"topic\":\"ahu/telemetry/%s\", \"ts\":%u, \"temp\":%.2f, \"hum\":%.2f, \"co2\":%d, \"pressure\":null}", topic_suffix, ts, t, h, co2);
+    snprintf(payload, sizeof(payload), "{\"topic\":\"ahu/telemetry/%s\", \"ts\":%lu, \"temp\":%.2f, \"hum\":%.2f, \"co2\":%d, \"pressure\":null}", topic_suffix, ts, t, h, co2);
     ServerUtil::send_ws_data(payload);
 }
 
@@ -163,7 +163,7 @@ void read_publish_bme(uint8_t ch, sens_bme280::BME280 &bme, const char* topic_su
     }
 
     char payload[256];
-    snprintf(payload, sizeof(payload), "{\"topic\":\"ahu/telemetry/%s\", \"ts\":%u, \"temp\":%.2f, \"hum\":%.2f, \"co2\":null, \"pressure\":%.2f}", topic_suffix, ts, t, h, p);
+    snprintf(payload, sizeof(payload), "{\"topic\":\"ahu/telemetry/%s\", \"ts\":%lu, \"temp\":%.2f, \"hum\":%.2f, \"co2\":null, \"pressure\":%.2f}", topic_suffix, ts, t, h, p);
     ServerUtil::send_ws_data(payload);
 }
 
@@ -340,11 +340,11 @@ extern "C" void app_main(void) {
         // 2. Publish Actuator States & Heartbeat
         char json_payload[256];
         snprintf(json_payload, sizeof(json_payload), 
-                 "{\"topic\":\"ahu/telemetry/actuators\", \"ts\":%u, \"mix_damper\":%.1f, \"cool_coil\":%.1f, \"heat_coil\":%.1f, \"humidifier\":%.1f, \"main_blower\":%.1f}", 
+                 "{\"topic\":\"ahu/telemetry/actuators\", \"ts\":%lu, \"mix_damper\":%.1f, \"cool_coil\":%.1f, \"heat_coil\":%.1f, \"humidifier\":%.1f, \"main_blower\":%.1f}", 
                  uptime_ms, actuators.mix_damper, actuators.cool_coil, actuators.heat_coil, actuators.humidifier, actuators.main_blower);
         ServerUtil::send_ws_data(json_payload);
 
-        snprintf(json_payload, sizeof(json_payload), "{\"topic\":\"ahu/heartbeat\", \"uptime_s\":%u, \"status\":\"%s\"}", 
+        snprintf(json_payload, sizeof(json_payload), "{\"topic\":\"ahu/heartbeat\", \"uptime_s\":%lu, \"status\":\"%s\"}", 
                  uptime_ms / 1000, any_sensor_error ? "degraded" : "running");
         ServerUtil::send_ws_data(json_payload);
 
