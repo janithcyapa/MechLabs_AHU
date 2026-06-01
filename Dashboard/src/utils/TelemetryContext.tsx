@@ -152,18 +152,14 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
       releaseAir: telemetry["ahu/telemetry/release"] || defaultSensor,
     };
 
-    // Dynamically map zone topics to "room[X]"
-    // e.g., "zone/north/telemetry" -> mappedData.roomNorth
-    // Object.keys(telemetry).forEach(topic => {
-    //     if (topic.startsWith("zone/")) {
-    //         const parts = topic.split("/");
-    //         if (parts.length >= 2) {
-    //             // Capitalize the first letter for neatness (north -> roomNorth)
-    //             const roomName = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
-    //             mappedData[`room${roomName}`] = telemetry[topic];
-    //         }
-    //     }
-    // });
+    // Dynamically map room topics to "room[X]"
+    // e.g., "ahu/telemetry/roomLeft" -> mappedData.roomLeft
+    Object.keys(telemetry).forEach(topic => {
+        if (topic.startsWith("ahu/telemetry/room")) {
+            const roomNamePart = topic.substring("ahu/telemetry/".length);
+            mappedData[roomNamePart as `room${string}`] = telemetry[topic];
+        }
+    });
 
     return mappedData;
   }, [telemetry]);

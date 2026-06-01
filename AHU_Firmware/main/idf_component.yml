@@ -16,3 +16,4 @@ dependencies:
   #   public: true
   espressif/cjson: '*'
   espressif/mqtt: '*'
+  espressif/esp_websocket_client: '*'

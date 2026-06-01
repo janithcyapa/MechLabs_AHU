@@ -31,7 +31,7 @@ export interface HVACSystemData {
     afterCooling: SensorData;
     afterHeating: SensorData;
     releaseAir: SensorData;
-    [roomKey: `room${number}`]: SensorData;
+    [roomKey: `room${string}`]: SensorData;
 }
 
 export interface RoomLayout {

@@ -33,7 +33,7 @@ const CATEGORIES = {
   release: { label: "Release Air", sensors: ["rel_t", "rel_h", "rel_co2"] },
   rooms: {
     label: "Zones/Rooms",
-    sensors: ["r1_t", "r1_h", "r1_co2"],
+    sensors: ["r1_t", "r1_h", "r1_co2", "r2_t", "r2_h", "r2_co2"],
   },
   controls: {
     label: "Control Signals",
@@ -53,7 +53,8 @@ const formatLegendName = (key: string) => {
     cool: 'Cooler',
     heat: 'Heater',
     rel: 'Release',
-    r1: 'Room 1',
+    r1: 'Room Left',
+    r2: 'Room Right',
     blower: 'Blower',
     hum: 'Humidifier',
   };
@@ -162,10 +163,13 @@ export default function DataRecorderPanel() {
           heat_cmd: liveActuators?.heatingCoil || 0,
           hum_cmd: liveActuators?.humidifier || 0,
           mix_cmd: liveActuators?.intakeOpening || 0,
-          // Zones (Mocked)
-          r1_t: liveHvac.releaseAir.temp + 2.5,
-          r1_h: liveHvac.releaseAir.hum - 5,
-          r1_co2: (liveHvac.releaseAir.co2 || -26) + 26,
+          // Zones
+          r1_t: liveHvac.roomLeft?.temp || 0,
+          r1_h: liveHvac.roomLeft?.hum || 0,
+          r1_co2: liveHvac.roomLeft?.co2 || 0,
+          r2_t: liveHvac.roomRight?.temp || 0,
+          r2_h: liveHvac.roomRight?.hum || 0,
+          r2_co2: liveHvac.roomRight?.co2 || 0,
 
           vav1_cmd: 40,
         };

@@ -19,36 +19,15 @@ export default function ScadaHVAC() {
 
     const roomsLayout: RoomLayout[] = [
         {
-            id: 'room1', label: 'NORTH ZONE',
-            temp: sensors.room1?.temp, co2: sensors.room1?.co2, hum: sensors.room1?.hum, valve: controls.vavRoom1,
-            colStart: 1, rowStart: 1, colSpan: 3, rowSpan: 1
+            id: 'roomLeft', label: 'ROOM LEFT',
+            temp: hvacData.roomLeft?.temp || 0, co2: hvacData.roomLeft?.co2 || 0, hum: hvacData.roomLeft?.hum || 0, valve: 0,
+            colStart: 1, rowStart: 1, colSpan: 1, rowSpan: 1
         },
-        // {
-        //     id: 'room2', label: 'WEST ZONE',
-        //     temp: sensors.room2?.temp, co2: sensors.room2?.co2, hum: sensors.room2?.hum, valve: controls.vavRoom2,
-        //     colStart: 1, rowStart: 2, colSpan: 1, rowSpan: 2
-        // },
-        // {
-        //     id: 'room3', label: 'CENTER HUB',
-        //     temp: sensors.room3?.temp, co2: sensors.room3?.co2, hum: sensors.room3?.hum, valve: controls.vavRoom3,
-        //     colStart: 2, rowStart: 2, colSpan: 1, rowSpan: 1,
-        // },
-        // {
-        //     id: 'room4', label: 'EAST ZONE',
-        //     temp: sensors.room4?.temp, co2: sensors.room4?.co2, hum: sensors.room4?.hum, valve: controls.vavRoom4,
-        //     colStart: 3, rowStart: 2, colSpan: 1, rowSpan: 2
-        // },
-        // {
-        //     id: 'room5', label: 'SOUTH ZONE',
-        //     temp: sensors.room5?.temp, co2: sensors.room5?.co2, hum: sensors.room5?.hum, valve: controls.vavRoom5,
-        //     colStart: 2, rowStart: 3, colSpan: 1, rowSpan: 1
-        // },
-        // {
-        //     id: 'hallway', label: 'MAIN HALL',
-        //     temp: 24.5, co2: 400, valve: 60,
-        //     colStart: 1, rowStart: 4, colSpan: 3, rowSpan: 1, isHub: true,
-        //     hum: 0
-        // }
+        {
+            id: 'roomRight', label: 'ROOM RIGHT',
+            temp: hvacData.roomRight?.temp || 0, co2: hvacData.roomRight?.co2 || 0, hum: hvacData.roomRight?.hum || 0, valve: 0,
+            colStart: 2, rowStart: 1, colSpan: 1, rowSpan: 1
+        }
     ];
 
     return (
@@ -153,7 +132,6 @@ export default function ScadaHVAC() {
                     {roomsLayout.map((room) => (
                         <div
                             key={room.id}
-                            // Apply dynamic styles for grid placement and spanning
                             style={{
                                 gridColumnStart: room.colStart,
                                 gridColumnEnd: room.colSpan ? `span ${room.colSpan}` : 'auto',
@@ -166,17 +144,11 @@ export default function ScadaHVAC() {
                                 }`}
                         >
                             <div className="h-48 flex flex-col xl:flex-row items-center justify-center gap-4">
-                                {/* <ComponentBlock
-                                    icon={GiValve}
-                                    label={room.label}
-                                    controlValue={room.valve || 0}
-                                    colorRing={room.isHub ? "text-emerald-400" : "text-cyan-400"}
-                                /> */}
                                 <SensorBlock
-                                    label="Room Condition"
-                                    temp={hvacData.releaseAir.temp + 2.5}
-                                    hum={hvacData.releaseAir.hum-5}
-                                    co2={(hvacData.releaseAir.co2||-26)+26}
+                                    label={room.label}
+                                    temp={room.temp}
+                                    hum={room.hum}
+                                    co2={room.co2}
                                     duct="bg-sky-900/40"
                                     showDuct={false}
                                 />

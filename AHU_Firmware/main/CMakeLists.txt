@@ -1,5 +1,13 @@
+set(BUILD_ROOM_NODE ON) # Change to ON to build the room sensor node firmware
+
+if(BUILD_ROOM_NODE)
+    set(SRC_FILES "room_main.cpp")
+else()
+    set(SRC_FILES "main.cpp")
+endif()
+
 idf_component_register(
-    SRCS "main.cpp"
+    SRCS "${SRC_FILES}"
     INCLUDE_DIRS "."
     REQUIRES
     cjson 
@@ -11,4 +19,5 @@ idf_component_register(
     util_wifi
     util_server
     util_pwm
+    esp_websocket_client
     )

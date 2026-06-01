@@ -177,6 +177,12 @@ void on_ws_cmd(const char *data) {
 
     cJSON *item;
 
+    cJSON *topic = cJSON_GetObjectItem(root, "topic");
+    if (topic && topic->valuestring && strncmp(topic->valuestring, "ahu/telemetry/room", 18) == 0) {
+        // Relay this telemetry to all connected dashboard clients
+        ServerUtil::send_ws_data(data);
+    }
+
     if ((item = cJSON_GetObjectItem(root, "mix_damper"))) {
         actuators.mix_damper = (float)item->valuedouble;
         static int current_mix_angle = 80;
