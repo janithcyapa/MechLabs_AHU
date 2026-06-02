@@ -13,12 +13,15 @@ const formatUptime = (totalSeconds: number): string => {
 
 const Taskbar = () => {
   const { telemetry, systemStatus, isConnected } = useTelemetry();
+
+  const roomLeft = telemetry["ahu/telemetry/roomLeft"] as any;
+  const roomRight = telemetry["ahu/telemetry/roomRight"] as any;
+  const flow = telemetry["ahu/telemetry/release_flow"] as any;
   
-  // Check if room node sent data recently
-  const roomLeft = telemetry["ahu/telemetry/roomLeft"];
-  const roomRight = telemetry["ahu/telemetry/roomRight"];
-  const isRoomOnline = (roomLeft && (Date.now() - roomLeft.ts < 15000)) || 
-                       (roomRight && (Date.now() - roomRight.ts < 15000));
+  // Use _localTs because .ts is the ESP's uptime which cannot be compared to Date.now()
+  const isRoomOnline = (roomLeft && (Date.now() - roomLeft._localTs < 15000)) || 
+                       (roomRight && (Date.now() - roomRight._localTs < 15000)) ||
+                       (flow && (Date.now() - flow._localTs < 15000));
 
   return (
     <footer className="h-8 bg-slate-950 border-t border-slate-800 flex items-center justify-between px-4 shrink-0 z-50 text-[11px] font-mono text-slate-400 tracking-wider">

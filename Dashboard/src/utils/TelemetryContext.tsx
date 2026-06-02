@@ -45,7 +45,7 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
     uptime: 0,
   });
   const [lastSeen, setLastSeen] = useState<number>(Date.now());
-
+  const [lastRoomSeen, setLastRoomSeen] = useState<number>(Date.now());
   const [isConnected, setIsConnected] = useState<boolean>(false); // WebSocket status
 
   const ws = useRef<WebSocket | null>(null);
@@ -86,8 +86,12 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
           } else if (topic && topic.startsWith("ahu/telemetry/")) {
             setTelemetry((prev) => ({
               ...prev,
-              [topic]: message,
+              [topic]: { ...message, _localTs: Date.now() },
             }));
+            if (topic.startsWith("ahu/telemetry/room") || topic === "ahu/telemetry/release_flow") {
+              setSystemStatus((prev) => ({ ...prev, roomOnline: true }));
+              setLastRoomSeen(Date.now());
+            }
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
@@ -118,17 +122,22 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
 
     const interval = setInterval(() => {
       const timeSinceLastSeen = Date.now() - lastSeen;
+      const timeSinceLastRoom = Date.now() - lastRoomSeen;
 
-      if (timeSinceLastSeen > TIMEOUT_MS) {
-        setSystemStatus((prev) => {
-          if (prev.online === false) return prev; // Already offline
-          return { ...prev, online: false };
-        });
-      }
+      setSystemStatus((prev) => {
+        let updated = { ...prev };
+        if (timeSinceLastSeen > TIMEOUT_MS && prev.online) {
+          updated.online = false;
+        }
+        if (timeSinceLastRoom > 15000 && prev.roomOnline) {
+          updated.roomOnline = false;
+        }
+        return (updated.online !== prev.online || updated.roomOnline !== prev.roomOnline) ? updated : prev;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [lastSeen]);
+  }, [lastSeen, lastRoomSeen]);
 
   const sendCommand = (topic: string, payload: any) => {
   if (ws.current && ws.current.readyState === WebSocket.OPEN) {
