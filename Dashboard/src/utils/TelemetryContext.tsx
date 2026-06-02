@@ -11,7 +11,6 @@ import { type ReactNode } from "react";
 import type {
   TelemetryContextType,
   TelemetryState,
-  WebSocketMessage,
   HVACSystemData,
   SensorData,
   ControlSignals,
@@ -139,7 +138,7 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
     return () => clearInterval(interval);
   }, [lastSeen, lastRoomSeen]);
 
-  const sendCommand = (topic: string, payload: any) => {
+  const sendCommand = (_topic: string, payload: any) => {
   if (ws.current && ws.current.readyState === WebSocket.OPEN) {
     // ESP firmware expects the command payload as a flat JSON string
     ws.current.send(JSON.stringify(payload));

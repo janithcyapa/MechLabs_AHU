@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { FaFan } from 'react-icons/fa';
 import { GiValve, GiHotSurface, GiSnowflake2 } from 'react-icons/gi';
 import { BiSolidSprayCan } from 'react-icons/bi';
@@ -8,14 +7,6 @@ import { useTelemetry } from '../../utils/TelemetryContext';
 
 export default function ScadaHVAC() {
     const { hvacData, actuators } = useTelemetry();
-    const [sensors] = useState({
-        room1: { temp: 23.0, hum: 55, co2: 600 },
-    });
-
-    const [controls] = useState({
-        vavRoom1: 60,
-        vavRoom2: 30,
-    });
 
     const roomsLayout: RoomLayout[] = [
         {
