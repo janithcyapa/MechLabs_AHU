@@ -1,24 +1,24 @@
 import { getCo2Color, getHumColor, getPressureColor, getTempColor } from '../../utils/colors';
-import {  FaTachometerAlt, FaThermometerHalf } from 'react-icons/fa';
+import { FaTachometerAlt, FaThermometerHalf } from 'react-icons/fa';
 import { MdOutlineCo2 } from 'react-icons/md';
 import { WiHumidity } from 'react-icons/wi';
 
-export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing, isBooleanControl= false}: any) => {
+export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing, isBooleanControl = false }: any) => {
   // --- Math for the SVG Dial ---
   const radius = 34;
   const circumference = 2 * Math.PI * radius;
 
   // 1. Determine the numeric value for the dial
   // If boolean: truthy = 100, falsy = 0. Otherwise, clamp the 0-100 range.
-  const effectiveValue = isBooleanControl 
-    ? (controlValue ? 100 : 0) 
+  const effectiveValue = isBooleanControl
+    ? (controlValue ? 100 : 0)
     : Math.max(0, Math.min(100, controlValue || 0));
 
   const strokeDashoffset = circumference - (effectiveValue / 100) * circumference;
 
   // 2. Determine the text display
-  const displayLabel = isBooleanControl 
-    ? (controlValue ? "ON" : "OFF") 
+  const displayLabel = isBooleanControl
+    ? (controlValue ? "ON" : "OFF")
     : `${effectiveValue}%`;
 
   return (
@@ -29,7 +29,7 @@ export const ComponentBlock = ({ icon: Icon, label, controlValue, colorRing, isB
 
       {/* The Dial Container */}
       <div className={`relative w-20 h-20 flex items-center justify-center ${colorRing}`}>
-        
+
         {/* SVG Progress Ring */}
         <svg className="absolute inset-0 w-full h-full rotate-90 drop-shadow-md z-20">
           {/* Faint Background Track */}
@@ -79,14 +79,14 @@ export const SensorBlock = ({ label = "", temp, hum, co2, pressure, flowrate, du
   return (
     <div className={`min-w-25 ${width} relative flex flex-col justify-center items-center`}>
       {showDuct && <HorizontalDuct width="w-full" color={duct} />}
-      
+
       <div className='absolute -top-16 pt-2 flex flex-col items-center gap-1 z-20'>
         {label && <div className="text-xs uppercase text-center">{label}</div>}
-        
+
         {/* Sensor Readings Box - Using divide-y to automatically handle lines between existing items */}
         {hasReadings && (
           <div className="mt-1 flex flex-col bg-slate-800/85 px-2.5 py-1 rounded-lg shadow-lg backdrop-blur-[2px] divide-y divide-slate-600/50">
-            
+
             {/* Temp */}
             {temp != null && (
               <div className={`flex items-center justify-between gap-4 py-1.5 ${getTempColor(temp)}`}>
@@ -134,26 +134,26 @@ export const SensorBlock = ({ label = "", temp, hum, co2, pressure, flowrate, du
   );
 };
 
-export const VerticalSensorBlock = ({ label = "", temp, hum, co2, pressure, flowrate, duct = "", height = 'h-32', showDuct = true }: any) => {
+export const VerticalSensorBlock = ({ label = "", temp, hum, co2, pressure, flowrate, duct = "", height = 'h-52', showDuct = true }: any) => {
 
   const hasReadings = temp != null || hum != null || co2 != null || pressure != null || flowrate != null;
 
   return (
-    <div className={`relative flex items-center justify-center ${height} w-12`}>
+    <div className={`relative flex items-center justify-center ${height} w-20`}>
       {/* The Vertical Pipe Background */}
       {showDuct && <VerticalPipe height="h-full" color={duct} />}
-      
+
       {/* Label positioned to the left of the pipe */}
       {label && (
         <div className="absolute right-24 mr-4 text-xs uppercase text-center">
           {label}
         </div>
       )}
-      
+
       {/* Sensor Readings Box - Floating directly on the pipe */}
       {hasReadings && (
-        <div className="absolute z-30 flex flex-col bg-slate-800/85 px-2.5 py-1 rounded-lg shadow-lg backdrop-blur-[2px] divide-y divide-slate-600/50">
-          
+        <div className="absolute z-30 flex w-28 flex-col bg-slate-800/85 px-2.5 py-1 rounded-lg shadow-lg backdrop-blur-[2px] divide-y divide-slate-600/50">
+
           {/* Temp */}
           {temp != null && (
             <div className={`flex items-center justify-between gap-4 py-1.5 ${getTempColor(temp)}`}>

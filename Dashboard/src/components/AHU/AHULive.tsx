@@ -7,7 +7,7 @@ import type { RoomLayout } from '../../utils/types';
 import { useTelemetry } from '../../utils/TelemetryContext';
 
 export default function ScadaHVAC() {
-    const { hvacData , actuators } = useTelemetry();
+    const { hvacData, actuators } = useTelemetry();
     const [sensors] = useState({
         room1: { temp: 23.0, hum: 55, co2: 600 },
     });
@@ -62,7 +62,7 @@ export default function ScadaHVAC() {
                     />
 
                     {/* 2. Cooling Coil */}
-                    <ComponentBlock icon={GiSnowflake2} label="COOL COIL" controlValue={actuators?.coolingCoil} colorRing="text-sky-400" isBooleanControl={true}/>
+                    <ComponentBlock icon={GiSnowflake2} label="COOL COIL" controlValue={actuators?.coolingCoil} colorRing="text-sky-400" isBooleanControl={true} />
 
                     <SensorBlock
                         label="Cooler Sensor"
@@ -73,7 +73,7 @@ export default function ScadaHVAC() {
                     />
 
                     {/* 3. Heating Coil */}
-                    <ComponentBlock icon={GiHotSurface} label="HEAT COIL" controlValue={actuators?.heatingCoil} colorRing="text-red-400" isBooleanControl={true}/>
+                    <ComponentBlock icon={GiHotSurface} label="HEAT COIL" controlValue={actuators?.heatingCoil} colorRing="text-red-400" isBooleanControl={true} />
 
                     {/* Duct between heater and humidifier */}
                     <HorizontalDuct width="w-24" color="bg-red-900/30" />
@@ -93,7 +93,7 @@ export default function ScadaHVAC() {
             </div>
 
             {/* --- ROW 2: ROUTING (Return Air Up / Supply Air Down) --- */}
-            <div className="flex items-center justify-between w-full relative h-28 z-10">
+            <div className="flex items-center justify-between w-full relative h-48 z-10">
                 <div className="max-w-60 w-full" />
 
                 {/* Return Air dropping in */}
