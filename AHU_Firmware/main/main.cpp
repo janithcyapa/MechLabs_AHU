@@ -257,6 +257,7 @@ extern "C" void app_main(void) {
     set_rgb(0, 0, 100);   // Blue = WiFi AP Started
     play_tone(1500, 150); // Short beep
 
+    ServerUtil::mount_spiffs();
     ServerUtil::init();
     ServerUtil::set_cmd_callback(on_ws_cmd);
 

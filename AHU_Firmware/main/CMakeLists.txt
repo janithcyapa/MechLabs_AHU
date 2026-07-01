@@ -22,3 +22,5 @@ idf_component_register(
     util_pwm
     esp_websocket_client
     )
+
+spiffs_create_partition_image(spiffs ../data FLASH_IN_PROJECT)

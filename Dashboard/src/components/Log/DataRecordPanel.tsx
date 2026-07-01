@@ -101,6 +101,7 @@ export default function DataRecorderPanel() {
     "controls",
   ]);
   const [chartData, setChartData] = useState<any[]>([]);
+  const fullHistoryRef = useRef<any[]>([]);
 
   const latestDataRef = useRef({ hvacData, actuators });
 
@@ -115,7 +116,10 @@ export default function DataRecorderPanel() {
   };
 
   const resetData = () => {
-    if (window.confirm("Clear all recorded buffer?")) setChartData([]);
+    if (window.confirm("Clear all recorded buffer?")) {
+      setChartData([]);
+      fullHistoryRef.current = [];
+    }
   };
 
   // Recording Logic
@@ -176,9 +180,12 @@ export default function DataRecorderPanel() {
           vav1_cmd: 40,
         };
 
+        // Keep full history in memory for CSV export without slowing down React
+        fullHistoryRef.current.push({ time: timestamp, ...currentSnapshot });
+
         setChartData((prev) => {
           const newData = [...prev, { time: timestamp, ...currentSnapshot }];
-          return newData.slice(-100); // Keep last 100 points
+          return newData.slice(-100); // Keep only last 100 points for the visual chart
         });
       };
 
@@ -190,12 +197,12 @@ export default function DataRecorderPanel() {
   }, [isRecording, timeStep]); 
 
   const saveToCSV = () => {
-    if (chartData.length === 0) return;
+    if (fullHistoryRef.current.length === 0) return;
     const headers = [
       "Time",
       ...Object.values(CATEGORIES).flatMap((c) => c.sensors),
     ].join(",");
-    const rows = chartData.map((d) =>
+    const rows = fullHistoryRef.current.map((d) =>
       [
         d.time,
         ...Object.values(CATEGORIES)
@@ -290,7 +297,7 @@ export default function DataRecorderPanel() {
 
               <button
                 onClick={saveToCSV}
-                disabled={chartData.length === 0}
+                disabled={fullHistoryRef.current.length === 0}
                 className="w-9 h-9 flex items-center justify-center bg-slate-800/50 hover:bg-slate-700 text-slate-400 rounded-lg border border-slate-700 disabled:opacity-30 transition-colors"
               >
                 <FaFileDownload size={14} />
@@ -318,7 +325,7 @@ export default function DataRecorderPanel() {
                   <FaChartLine className="text-cyan-500" /> {cat.label} Trend
                 </h3>
                 <span className="text-[9px] font-mono text-slate-600 uppercase">
-                  Live Buffer: {chartData.length} pts
+                  Live Buffer: {chartData.length} pts (Total Saved: {fullHistoryRef.current.length})
                 </span>
               </div>
 

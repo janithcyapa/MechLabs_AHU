@@ -4,4 +4,5 @@
     "idf.buildPath": "${workspaceFolder}/AHU_Firmware/build",
     "idf.sdkconfigFilePath": "${workspaceFolder}/AHU_Firmware/sdkconfig",
     "cmake.sourceDirectory": "/home/jazz/Projects/MechLabs_AHU/AHU_Firmware/main",
+    "idf.flashType": "UART",
 }

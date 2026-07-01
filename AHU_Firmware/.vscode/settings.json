@@ -1,5 +1,12 @@
 {
   "idf.currentSetup": "/home/jazz/.espressif/v6.0/esp-idf",
   "idf.flashType": "UART",
-  "idf.port": "/dev/ttyUSB0"
+  "idf.port": "/dev/ttyUSB0",
+  "clangd.path": "/home/jazz/.espressif/tools/esp-clang/esp-20.1.1_20250829/esp-clang/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=/home/jazz/Projects/MechLabs_AHU/AHU_Firmware/build"
+  ],
+  "idf.customExtraVars": {}
 }
