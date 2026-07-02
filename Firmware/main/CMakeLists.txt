@@ -1,4 +1,4 @@
-set(BUILD_ROOM_NODE OFF) # Change to ON to build the room sensor node firmware
+set(BUILD_ROOM_NODE ON) # Change to ON to build the room sensor node firmware
 
 if(BUILD_ROOM_NODE)
     set(SRC_FILES "MainVavController.cpp" "VavWifiManager.cpp")
