@@ -1,6 +1,6 @@
 import HVAC_SCADA from "../components/HVAC_SCADA";
+import HVAC_CONTROLLER from "../components/HVAC_CONTROLLER";
 import InformationWidget from "../components/InformationWidget";
-import SystemControllerPanel from "../components/Control/SystemControllerPanel";
 
 export default function Dashboard() {
   // const { hvacData, isConnected , actuators} = useTelemetry();
@@ -19,7 +19,7 @@ export default function Dashboard() {
       </div>
 
       <HVAC_SCADA />
-      {/* <SystemControllerPanel /> */}
+      <HVAC_CONTROLLER />
     </div>
   );
 }

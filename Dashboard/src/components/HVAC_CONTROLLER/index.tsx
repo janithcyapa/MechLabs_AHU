@@ -1,10 +1,11 @@
 
 import { useEffect, useState } from 'react';
-import { FaSlidersH, FaRobot,  FaUpload, FaPlay } from 'react-icons/fa';
+import { FaSlidersH, FaRobot, FaUpload, FaPlay } from 'react-icons/fa';
 import { GiValve, GiSnowflake2, GiHotSurface, GiWaterDrop } from 'react-icons/gi';
-import { ToggleSwitch ,ControlKnob } from './ControlKnob';
+import { ToggleSwitch, ControlKnob } from './ControlKnob';
+import PanelSlider from './ControlSlider';
 import SetpointInput from './SetPoint';
-import { useTelemetry } from '../../utils/TelemetryContext'; 
+import { useTelemetry } from '../../utils/TelemetryContext';
 import { dummyActuators as actuators } from '../../utils/dummyData';
 
 const SystemControllerPanel = () => {
@@ -16,18 +17,14 @@ const SystemControllerPanel = () => {
 
   // State: Manual Controls
   const [manualCmd, setManualCmd] = useState<any>({
-    intakeOpening: 0, coolingCoil: 0, heatingCoil: 0, humidifier: 0, blower: 0,
-    ...dynamicRooms.reduce((acc, room) => ({ ...acc, [`vav_${room}`]: 0 }), {})
+    intakeOpening: 0, coolingCoil: 0, heatingCoil: 0, humidifier: 0, blower: 0, vav: 0
   });
 
   // State: Auto Setpoints
   const [setpoints, setSetpoints] = useState<any>({
-    releaseAir: { temp: 18.0, co2: 450, hum:50 },
-    ...dynamicRooms.reduce((acc, room) => ({ ...acc, [room]: { temp: 24.0, co2: 600 , hum:50 } }), {})
+    releaseAir: { temp: 18.0, co2: 450, hum: 50 },
+    ...dynamicRooms.reduce((acc, room) => ({ ...acc, [room]: { temp: 24.0, co2: 600, hum: 50 } }), {})
   });
-
-  // State: Custom Python Script
-  const [pythonScript, setPythonScript] = useState("# Define your custom HVAC control logic here\n# Available objects: sensors, actuators\n\ndef control_loop(sensors):\n    # Example: Simple proportional control\n    error = 24.0 - sensors['room1']['temp']\n    actuators['vavRoom1'] = max(0, min(100, error * 10))\n    return actuators\n");
 
   useEffect(() => {
     if (actuators) {
@@ -41,22 +38,27 @@ const SystemControllerPanel = () => {
       }));
     }
   }, [actuators]);
-  
+
   const updateManual = (key: string, val: number) => {
-    setManualCmd((p: any) => ({ ...p, [key]: val }));
+    // Sync fan (blower) and vav
+    if (key === 'blower' || key === 'vav') {
+      setManualCmd((p: any) => ({ ...p, blower: val, vav: val }));
+      sendCommand("ahu/cmd", { fan: val, vav: val });
+    } else {
+      setManualCmd((p: any) => ({ ...p, [key]: val }));
 
-    const hardwareKeys: Record<string, string> = {
-      intakeOpening: 'mix_damper',
-      coolingCoil: 'cool_coil',
-      heatingCoil: 'heat_coil',
-      humidifier: 'humidifier',
-      blower: 'main_blower',
-    };
+      const hardwareKeys: Record<string, string> = {
+        intakeOpening: 'mixer',
+        coolingCoil: 'cooler',
+        heatingCoil: 'heater',
+        humidifier: 'humidifer', // Note: matching the typo in firmware
+      };
 
-    const hwKey = hardwareKeys[key];
-    
-    if (hwKey) {
-      sendCommand("ahu/cmd", { [hwKey]: val });
+      const hwKey = hardwareKeys[key];
+
+      if (hwKey) {
+        sendCommand("ahu/cmd", { [hwKey]: val });
+      }
     }
   };
 
@@ -108,24 +110,22 @@ const SystemControllerPanel = () => {
             <div>
               <h3 className="text-sm text-slate-400 font-bold uppercase tracking-widest border-b border-slate-700 pb-2 mb-4">AHU Hardware Override</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                <ControlKnob label="Mix Damper" value={manualCmd.intakeOpening} onChange={(v: number) => updateManual('intakeOpening', v)} icon={GiValve} colorClass="text-slate-400" />
+                <PanelSlider label="Mix Damper" value={manualCmd.intakeOpening} onChange={(v: number) => updateManual('intakeOpening', v)} icon={GiValve} colorClass="text-slate-400" />
                 <ToggleSwitch label="Cooling Coil" isBinary={true} value={manualCmd.coolingCoil} onChange={(v: number) => updateManual('coolingCoil', v)} icon={GiSnowflake2} colorClass="text-sky-400" />
-                <ToggleSwitch label="Heating Coil" isBinary={true} value={manualCmd.heatingCoil} onChange={(v: number) => updateManual('heatingCoil', v)} icon={GiHotSurface} colorClass="text-red-400" />
-                <ToggleSwitch label="Humidifier" isBinary={true} value={manualCmd.humidifier} onChange={(v: number) => updateManual('humidifier', v)} icon={GiWaterDrop} colorClass="text-blue-400" />
-                <ControlKnob label="Main Blower" value={manualCmd.blower} onChange={(v: number) => updateManual('blower', v)} icon={FaSlidersH} colorClass="text-green-400" />
+                <ToggleSwitch label="Heating Coil" isBinary={true} value={manualCmd.heatingCoil} onChange={(v: number) => updateManual('heatingCoil', v)} icon={GiHotSurface} colorClass="text-red-400" disabled={true} />
+                <ToggleSwitch label="Humidifier" isBinary={true} value={manualCmd.humidifier} onChange={(v: number) => updateManual('humidifier', v)} icon={GiWaterDrop} colorClass="text-blue-400" disabled={true} />
+                <PanelSlider label="Main Blower" value={manualCmd.blower} onChange={(v: number) => updateManual('blower', v)} icon={FaSlidersH} colorClass="text-green-400" />
               </div>
             </div>
 
             <div>
               <h3 className="text-sm text-slate-400 font-bold uppercase tracking-widest border-b border-slate-700 pb-2 mb-4">Zone VAV Override</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {dynamicRooms.map((room, idx) => (
-                  <ControlKnob
-                    key={room} label={`VAV Zone ${idx + 1}`}
-                    value={manualCmd[`vav_${room}`]} onChange={(v: number) => updateManual(`vav_${room}`, v)}
-                    icon={GiValve} colorClass="text-cyan-500"
-                  />
-                ))}
+                <ControlKnob
+                  label={`VAV`}
+                  value={manualCmd.vav} onChange={(v: number) => updateManual(`vav`, v)}
+                  icon={GiValve} colorClass="text-cyan-500" disabled={true}
+                />
               </div>
             </div>
           </div>
@@ -133,13 +133,13 @@ const SystemControllerPanel = () => {
 
         {/* --- AUTO MODE --- */}
         {mode === 'auto' && (
-          <div className="space-y-8 animate-in fade-in duration-300 w-full">
+          <div className="space-y-8 animate-in fade-in duration-300 w-full grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm text-emerald-500/80 font-bold uppercase tracking-widest border-b border-slate-700 pb-2 mb-4">Main Supply Targets</h3>
               <SetpointInput
                 label="AHU Release"
                 tempVal={setpoints.releaseAir.temp} co2Val={setpoints.releaseAir.co2}
-                humVal ={setpoints.releaseAir.hum}
+                humVal={setpoints.releaseAir.hum}
                 onTempChange={(v: number) => updateSetpoint('releaseAir', 'temp', v)}
                 onCo2Change={(v: number) => updateSetpoint('releaseAir', 'co2', v)}
                 onHumChange={(v: number) => updateSetpoint('releaseAir', 'hum', v)}
@@ -152,7 +152,7 @@ const SystemControllerPanel = () => {
               </h3>
 
               {/* The Grid Container */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-6">
+              <div className="">
                 {dynamicRooms.map((room, idx) => (
                   <SetpointInput
                     key={room}
@@ -170,32 +170,7 @@ const SystemControllerPanel = () => {
           </div>
         )}
 
-        {/* --- CUSTOM MODE --- */}
-        {mode === 'custom' && (
-          <div className="flex flex-col h-full animate-in fade-in duration-300">
-            <div className="flex justify-between items-end border-b border-slate-700 pb-2 mb-4">
-              <h3 className="text-sm text-purple-400/80 font-bold uppercase tracking-widest">Python Logic Editor</h3>
-              <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold tracking-widest uppercase transition-colors border border-slate-600">
-                  <FaUpload /> Upload .py
-                </button>
-                <button className="flex items-center gap-2 px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold tracking-widest uppercase transition-colors shadow-[0_0_15px_rgba(147,51,234,0.4)]">
-                  <FaPlay /> Deploy Logic
-                </button>
-              </div>
-            </div>
 
-            <textarea
-              value={pythonScript}
-              onChange={(e) => setPythonScript(e.target.value)}
-              spellCheck="false"
-              className="w-full h-80 bg-[#0d1117] text-slate-300 font-mono text-sm p-4 rounded-xl border border-slate-700 focus:outline-none focus:border-purple-500/50 shadow-inner resize-y custom-scrollbar"
-            />
-            <p className="text-[10px] text-slate-500 font-mono mt-2">
-              Note: Script runs securely on the edge controller. Ensure you return the `actuators` dictionary.
-            </p>
-          </div>
-        )}
 
       </div>
     </div>

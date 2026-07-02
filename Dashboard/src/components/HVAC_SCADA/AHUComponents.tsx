@@ -141,7 +141,7 @@ export const VerticalSensorBlock = ({ label = "", temp, hum, co2, pressure, flow
   return (
     <div className={`relative flex items-center justify-center ${height} w-20`}>
       {/* The Vertical Pipe Background */}
-      {showDuct && <VerticalPipe height="h-full" color={duct} />}
+      {showDuct && <VerticalPipe height="h-40" color={duct} />}
 
       {/* Label positioned to the left of the pipe */}
       {label && (
@@ -211,3 +211,19 @@ export const HorizontalDuct = ({ width = "w-full", color = "bg-slate-700" }) => 
     <div className="w-full h-1 bg-white/10 animate-pulse"></div>
   </div>
 );
+
+export const VAVBox = ({ actualFlow, width = 'w-full' }: any) => {
+  return (
+    <div className={`min-w-25 ${width} relative flex flex-col justify-center items-center`}>
+      <div className='flex flex-col items-center gap-1 z-20'>
+        <div className="text-xs uppercase text-center">VAV BOX</div>
+        <div className="mt-1 flex flex-col bg-slate-800/85 px-2.5 py-1 rounded-lg shadow-lg backdrop-blur-[2px]">
+          <div className={`flex items-center justify-between gap-4 py-1.5 text-blue-300`}>
+            <FaTachometerAlt className="text-[12px]" />
+            <span className="font-mono font-bold text-sm tracking-tighter">{actualFlow?.toFixed(1) || 0} L/s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

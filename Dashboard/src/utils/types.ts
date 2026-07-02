@@ -9,8 +9,34 @@ export interface SensorData {
 
 export type TelemetryState = Record<string, SensorData>;
 
+export interface FormattedSensorData {
+    t: number;
+    h: number;
+    c: number;
+    p: number;
+    a: number;
+    v: number;
+}
+
+export interface FormattedTelemetryState {
+    outside: FormattedSensorData;
+    room1_sensor1: FormattedSensorData;
+    room1_sensor2: FormattedSensorData;
+    supply: FormattedSensorData;
+    return: FormattedSensorData;
+    mixed: FormattedSensorData;
+    cooler: FormattedSensorData;
+    heated: FormattedSensorData;
+    mixer: number;
+    fan: number;
+    flowrate: number;
+    coolerState: boolean;
+    heaterState: boolean;
+    humidifierState: boolean;
+}
+
 export interface TelemetryContextType {
-    rawJson: any;
+    systemData: FormattedTelemetryState;
     sendCommand: (topic: string, payload: any) => void;
     isConnected: boolean;
 }

@@ -41,8 +41,7 @@ const PcaChannelConfig pca_config[8] = {
     {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
     {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
     {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
-    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""}
-  };
+    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""}};
 
 const InputPinConfig input_config[] = {
     // {InputType::NONE, 0, ""},
@@ -50,8 +49,8 @@ const InputPinConfig input_config[] = {
 const int input_config_size = sizeof(input_config) / sizeof(input_config[0]);
 
 const OutputPinConfig output_config[] = {
-    {OutputType::RELAY, 13, "cooler"},
-    {OutputType::PWM, 18, "fan"},
+    {OutputType::RELAY, 13, "cooler"},    {OutputType::RELAY, 33, "heater"},
+    {OutputType::RELAY, 32, "humidifer"}, {OutputType::PWM, 18, "fan"},
     {OutputType::PWM, 19, "mixer"},
 
 };

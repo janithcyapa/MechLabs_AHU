@@ -1,53 +1,132 @@
-import { FaThermometerHalf, FaWind } from 'react-icons/fa';
+import { FaThermometerHalf, FaWind, FaTachometerAlt } from 'react-icons/fa';
 import { WiHumidity } from 'react-icons/wi';
 import { MdOutlineCo2 } from 'react-icons/md';
 import { getCo2Color, getHumColor, getTempColor } from '../utils/colors';
-import { dummyHvacData as hvacData } from '../utils/dummyData';
+import { useTelemetry } from '../utils/TelemetryContext';
 
 export default function InformationWidget() {
+  const { systemData } = useTelemetry();
 
   return (
-    <div
-      className="relative flex flex-col justify-center h-16 px-4 min-w-55 rounded-xl shadow-lg overflow-hidden shrink-0"
-      style={{
-        backgroundImage: `url(/env_bg.jpg)`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
+    <div className="flex gap-4 ">
+      {/* Ambient Environment (Yellowish) */}
+      <div
+        className="relative flex flex-col justify-center h-16 px-4 min-w-55 rounded-xl shadow-lg overflow-hidden shrink-0"
+        style={{
+          backgroundImage: `url(/env_bg.jpg)`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-[#3b341f]/90 backdrop-blur-[2px] pointer-events-none"></div>
 
-      <div className="absolute inset-0 bg-[#111827]/90 backdrop-blur-[2px] pointer-events-none"></div>
+        <div className="relative z-10 flex items-center gap-1.5 mb-0.5 text-slate-100">
+          <FaWind className="text-lg text-yellow-500 drop-shadow-sm" />
+          <span className="text-xs font-bold tracking-widest text-yellow-100">Ambient Environment</span>
+        </div>
 
-      {/* Top Row: Icon + Label */}
-      <div className="relative z-10 flex items-center gap-1.5 mb-0.5 text-slate-100">
-        <FaWind className="text-lg text-cyan-500 drop-shadow-sm" />
-        <span className="text-xs font-bold tracking-widest">Ambient Environment</span>
+        <div className="relative z-10 flex items-center justify-between w-full">
+          <div className={`flex items-center gap-1 ${getTempColor(systemData.outside.t)}`}>
+            <FaThermometerHalf className="text-[13px]" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.outside.t.toFixed(1)}°C</span>
+          </div>
+
+          <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+
+          <div className={`flex items-center gap-0.5 ${getHumColor(systemData.outside.h)}`}>
+            <WiHumidity className="text-xl -ml-1" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.outside.h.toFixed(1)}%</span>
+          </div>
+
+          <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+
+          <div className={`flex items-center gap-0.5 ${getCo2Color(systemData.outside.c)}`}>
+            <MdOutlineCo2 className="text-2xl" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.outside.c.toFixed(1)}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Bottom Row: Data Values */}
-      <div className="relative z-10 flex items-center justify-between w-full">
-        {/* Temp */}
-        <div className={`flex items-center gap-1 ${getTempColor(hvacData.ambient.temp)}`}>
-          <FaThermometerHalf className="text-[13px]" />
-          <span className="font-mono font-bold text-lg tracking-tighter">{hvacData.ambient.temp.toFixed(1)}°C</span>
+      {/* Supply Condition */}
+      <div
+        className="relative flex flex-col justify-center h-16 px-4 min-w-55 rounded-xl shadow-lg overflow-hidden shrink-0"
+        style={{
+          backgroundImage: `url(/env_bg.jpg)`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-[#111827]/90 backdrop-blur-[2px] pointer-events-none"></div>
+
+        <div className="relative z-10 flex items-center gap-1.5 mb-0.5 text-slate-100">
+          <FaWind className="text-lg text-cyan-500 drop-shadow-sm" />
+          <span className="text-xs font-bold tracking-widest">Supply Condition</span>
         </div>
 
-        {/* Subtle Divider */}
-        <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+        <div className="relative z-10 flex items-center justify-between w-full">
+          <div className={`flex items-center gap-1 ${getTempColor(systemData.supply.t)}`}>
+            <FaThermometerHalf className="text-[13px]" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.supply.t.toFixed(1)}°C</span>
+          </div>
 
-        {/* Humidity */}
-        <div className={`flex items-center gap-0.5 ${getHumColor(hvacData.ambient.hum)}`}>
-          <WiHumidity className="text-xl -ml-1" />
-          <span className="font-mono font-bold text-lg tracking-tighter">{hvacData.ambient.hum.toFixed(1)}%</span>
+          <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+
+          <div className={`flex items-center gap-0.5 ${getHumColor(systemData.supply.h)}`}>
+            <WiHumidity className="text-xl -ml-1" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.supply.h.toFixed(1)}%</span>
+          </div>
+
+          <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+
+          <div className={`flex items-center gap-0.5 ${getCo2Color(systemData.supply.c)}`}>
+            <MdOutlineCo2 className="text-2xl" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.supply.c.toFixed(1)}</span>
+          </div>
+          
+          <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+
+          <div className={`flex items-center gap-0.5 text-blue-300`}>
+            <FaTachometerAlt className="text-[11px] mr-0.5" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.flowrate.toFixed(1)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Room Condition (Bluish) */}
+      <div
+        className="relative flex flex-col justify-center h-16 px-4 min-w-55 rounded-xl shadow-lg overflow-hidden shrink-0"
+        style={{
+          backgroundImage: `url(/env_bg.jpg)`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-[#172554]/90 backdrop-blur-[2px] pointer-events-none"></div>
+
+        <div className="relative z-10 flex items-center gap-1.5 mb-0.5 text-slate-100">
+          <FaWind className="text-lg text-blue-400 drop-shadow-sm" />
+          <span className="text-xs font-bold tracking-widest text-blue-100">Room Condition</span>
         </div>
 
-        {/* Subtle Divider */}
-        <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+        <div className="relative z-10 flex items-center justify-between w-full">
+          <div className={`flex items-center gap-1 ${getTempColor(systemData.room1_sensor1.t)}`}>
+            <FaThermometerHalf className="text-[13px]" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.room1_sensor1.t.toFixed(1)}°C</span>
+          </div>
 
-        {/* CO2 */}
-        <div className={`flex items-center gap-0.5 ${getCo2Color(hvacData.ambient.co2 || 0)}`}>
-          <MdOutlineCo2 className="text-2xl" />
-          <span className="font-mono font-bold text-lg tracking-tighter">{(hvacData.ambient.co2 || 0).toFixed(0)}</span>
+          <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+
+          <div className={`flex items-center gap-0.5 ${getHumColor(systemData.room1_sensor1.h)}`}>
+            <WiHumidity className="text-xl -ml-1" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.room1_sensor1.h.toFixed(1)}%</span>
+          </div>
+
+          <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
+
+          <div className={`flex items-center gap-0.5 ${getCo2Color(systemData.room1_sensor1.c)}`}>
+            <MdOutlineCo2 className="text-2xl" />
+            <span className="font-mono font-bold text-lg tracking-tighter">{systemData.room1_sensor1.c.toFixed(1)}</span>
+          </div>
         </div>
       </div>
     </div>
