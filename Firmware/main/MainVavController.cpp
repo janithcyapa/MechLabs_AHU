@@ -35,11 +35,11 @@ const UBaseType_t SYNC_TASK_PRIO = 5;
 
 // --- VAV Configuration ---
 const PcaChannelConfig pca_config[8] = {
-    {PcaSensorType::AHT21_ENS160, "room1_1"},
-    {PcaSensorType::BME280, "duct_1"},
-    {PcaSensorType::NONE, ""},
-    {PcaSensorType::NONE, ""},
-    {PcaSensorType::NONE, ""},
+    {PcaSensorType::BME280, "room1_1"},
+    {PcaSensorType::AHT21_ENS160, "room1_2"},
+    {PcaSensorType::AHT21_ENS160, "outdoor"},
+    {PcaSensorType::AHT21_ENS160, "supply"},
+    {PcaSensorType::AHT21_ENS160, "return"},
     {PcaSensorType::NONE, ""},
     {PcaSensorType::NONE, ""},
     {PcaSensorType::NONE, ""}};

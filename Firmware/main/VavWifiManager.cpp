@@ -59,11 +59,11 @@ void VavWifiManager::syncTaskLoop(void* arg) {
                 out = StateManager::getDirtyJsonString();
             }
             
-            if (out) {
-                if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Publishing state (delta=%d): %s", (tick_counter-1)%10 != 0, out);
-                esp_websocket_client_send_text(client, out, strlen(out), pdMS_TO_TICKS(500));
-                free(out);
-            }
+            // if (out) {
+            //     if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Publishing state (delta=%d): %s", (tick_counter-1)%10 != 0, out);
+            //     esp_websocket_client_send_text(client, out, strlen(out), pdMS_TO_TICKS(500));
+            //     free(out);
+            // }
         }
         vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }

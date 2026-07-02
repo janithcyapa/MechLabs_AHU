@@ -15,6 +15,11 @@ void StateManager::init() {
 
 void StateManager::set(const char* key, double value) {
     if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+        cJSON* old = cJSON_GetObjectItem(state, key);
+        if (old && cJSON_IsNumber(old) && old->valuedouble == value) {
+            xSemaphoreGive(mutex);
+            return;
+        }
         cJSON_DeleteItemFromObject(state, key);
         cJSON_AddNumberToObject(state, key, value);
         dirty_keys.insert(key);
@@ -24,6 +29,11 @@ void StateManager::set(const char* key, double value) {
 
 void StateManager::set(const char* key, const char* value) {
     if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+        cJSON* old = cJSON_GetObjectItem(state, key);
+        if (old && cJSON_IsString(old) && strcmp(old->valuestring, value) == 0) {
+            xSemaphoreGive(mutex);
+            return;
+        }
         cJSON_DeleteItemFromObject(state, key);
         cJSON_AddStringToObject(state, key, value);
         dirty_keys.insert(key);

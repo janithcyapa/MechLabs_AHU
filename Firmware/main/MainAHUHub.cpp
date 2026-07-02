@@ -34,19 +34,25 @@ const uint32_t SYNC_TASK_STACK = 4096;
 const UBaseType_t SYNC_TASK_PRIO = 5;
 
 // --- AHU Configuration ---
-const PcaChannelConfig pca_config[8] = {
-    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
-    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
-    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
-    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""}};
+const PcaChannelConfig pca_config[8] = {{PcaSensorType::AHT21_ENS160, "mixed"},
+                                        {PcaSensorType::BME280, "cooled"},
+                                        {PcaSensorType::BME280, "heated"},
+                                        {PcaSensorType::NONE, ""},
+                                        {PcaSensorType::NONE, ""},
+                                        {PcaSensorType::NONE, ""},
+                                        {PcaSensorType::NONE, ""},
+                                        {PcaSensorType::NONE, ""}};
 
 const InputPinConfig input_config[] = {
-    {InputType::NONE, 0, ""}, // Example mapping
+    // {InputType::NONE, 0, ""},
 };
 const int input_config_size = sizeof(input_config) / sizeof(input_config[0]);
 
 const OutputPinConfig output_config[] = {
-    {OutputType::PWM, 18, "supply_fan_speed"}, // Example mapping
+    {OutputType::RELAY, 13, "cooler"},
+    {OutputType::PWM, 18, "fan"},
+    {OutputType::PWM, 19, "mixer"},
+
 };
 const int output_config_size = sizeof(output_config) / sizeof(output_config[0]);
 
