@@ -9,6 +9,7 @@
 #include <vector>
 
 static const char* TAG = "OutputTask";
+extern const int VERBOSE_MODE;
 
 // Helper structure to hold dynamically allocated PWM instances
 struct PwmInstance {
@@ -60,13 +61,15 @@ void OutputTask::taskLoop(void* arg) {
 
             if (output_config[i].type == OutputType::RELAY) {
                 // Treat >0.5 as ON, else OFF
-                gpio_set_level((gpio_num_t)output_config[i].pin, target_val > 0.5 ? 1 : 0);
+                int level = target_val > 0.5 ? 1 : 0;
+                if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Output [%s] Relay (GPIO %d): %d", output_config[i].state_key, output_config[i].pin, level);
+                gpio_set_level((gpio_num_t)output_config[i].pin, level);
             } 
             else if (output_config[i].type == OutputType::PWM) {
                 // Find matching PWM instance
                 for (auto& inst : pwm_instances) {
                     if (inst.config_index == i) {
-                        // Assuming target_val is duty cycle or raw value. Using raw duty for simplicity.
+                        if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Output [%s] PWM (GPIO %d): %.1f", output_config[i].state_key, output_config[i].pin, target_val);
                         inst.pwm->set_raw_duty((uint32_t)target_val);
                         break;
                     }

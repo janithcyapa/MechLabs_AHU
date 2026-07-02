@@ -19,6 +19,8 @@ struct AdcMapping {
 };
 static std::vector<AdcMapping> adc_mappings;
 
+extern const int VERBOSE_MODE;
+
 void InputTask::init() {
     // Basic ADC initialization. If ADC config becomes complex, it can go here.
 }
@@ -77,6 +79,7 @@ void InputTask::taskLoop(void* arg) {
         for (int i = 0; i < input_config_size; i++) {
             if (input_config[i].type == InputType::DIGITAL_GPIO) {
                 int val = gpio_get_level((gpio_num_t)input_config[i].pin);
+                if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Input [%s] GPIO %d: %d", input_config[i].state_key, input_config[i].pin, val);
                 StateManager::set(input_config[i].state_key, (double)val);
             } 
             else if (input_config[i].type == InputType::ANALOG_ADC) {
@@ -85,6 +88,7 @@ void InputTask::taskLoop(void* arg) {
                         adc_oneshot_unit_handle_t handle = (map.unit == ADC_UNIT_1) ? adc1_handle : adc2_handle;
                         int raw_val;
                         if (adc_oneshot_read(handle, map.channel, &raw_val) == ESP_OK) {
+                            if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Input [%s] ADC (GPIO %d): %d", input_config[i].state_key, input_config[i].pin, raw_val);
                             StateManager::set(input_config[i].state_key, (double)raw_val);
                         }
                         break;

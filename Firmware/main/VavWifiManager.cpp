@@ -10,6 +10,7 @@
 
 static const char *TAG = "VavWifiManager";
 static esp_websocket_client_handle_t client = NULL;
+extern const int VERBOSE_MODE;
 
 void VavWifiManager::websocketEventHandler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data) {
     switch (event_id) {
@@ -30,6 +31,7 @@ void VavWifiManager::websocketEventHandler(void* handler_args, esp_event_base_t 
             if (payload) {
                 memcpy(payload, data->data_ptr, data->data_len);
                 payload[data->data_len] = '\0';
+                if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Received WS payload: %s", payload);
                 StateManager::mergeJson(payload);
                 free(payload);
             }
@@ -47,6 +49,7 @@ void VavWifiManager::publishTask(void* arg) {
         if (client != NULL && esp_websocket_client_is_connected(client)) {
             char* out = StateManager::getJsonString();
             if (out) {
+                if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Publishing state: %s", out);
                 esp_websocket_client_send_text(client, out, strlen(out), pdMS_TO_TICKS(500));
                 free(out);
             }

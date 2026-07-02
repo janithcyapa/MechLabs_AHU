@@ -13,6 +13,7 @@
 #include <string.h>
 
 static const char* TAG = "PcaTask";
+extern const int VERBOSE_MODE;
 
 void PcaTask::init() {
     // Initialization handled inside the task to avoid locking up main
@@ -69,6 +70,7 @@ void PcaTask::taskLoop(void* arg) {
             if (pca_config[i].type == PcaSensorType::AHT21_ENS160) {
                 float temp = 0.0, hum = 0.0;
                 if (aht.read(temp, hum) == ESP_OK) {
+                    if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "[%s] AHT21 - Temp: %.1f C, Hum: %.1f %%", pca_config[i].name, temp, hum);
                     snprintf(key_buf, sizeof(key_buf), "%s_t", pca_config[i].name);
                     StateManager::set(key_buf, temp);
                     snprintf(key_buf, sizeof(key_buf), "%s_h", pca_config[i].name);
@@ -80,6 +82,7 @@ void PcaTask::taskLoop(void* arg) {
                 
                 sens_ens160::Ens160Data ens_data;
                 if (ens.read_data(ens_data) == ESP_OK) {
+                    if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "[%s] ENS160 - AQI: %d, TVOC: %d, eCO2: %d", pca_config[i].name, ens_data.aqi, ens_data.tvoc, ens_data.eco2);
                     snprintf(key_buf, sizeof(key_buf), "%s_a", pca_config[i].name);
                     StateManager::set(key_buf, ens_data.aqi);
                     snprintf(key_buf, sizeof(key_buf), "%s_v", pca_config[i].name);
@@ -91,6 +94,7 @@ void PcaTask::taskLoop(void* arg) {
             else if (pca_config[i].type == PcaSensorType::BME280) {
                 sens_bme280::Bme280Data bme_data;
                 if (bme.read_data(bme_data) == ESP_OK) {
+                    if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "[%s] BME280 - Temp: %.1f C, Hum: %.1f %%, Press: %.1f hPa", pca_config[i].name, bme_data.temperature, bme_data.humidity, bme_data.pressure);
                     snprintf(key_buf, sizeof(key_buf), "%s_t", pca_config[i].name);
                     StateManager::set(key_buf, bme_data.temperature);
                     snprintf(key_buf, sizeof(key_buf), "%s_h", pca_config[i].name);

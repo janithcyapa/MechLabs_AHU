@@ -6,9 +6,10 @@
 #include "sdkconfig.h"
 
 static const char *TAG = "AhuWifiManager";
+extern const int VERBOSE_MODE;
 
 void AhuWifiManager::wsCommandCallback(const char* payload) {
-    ESP_LOGI(TAG, "Received WS payload: %s", payload);
+    if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Received WS payload: %s", payload);
     StateManager::mergeJson(payload);
     broadcastState();
 }
@@ -30,6 +31,7 @@ void AhuWifiManager::init() {
 void AhuWifiManager::broadcastState() {
     char* out = StateManager::getJsonString();
     if (out) {
+        if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Broadcasting state: %s", out);
         ServerUtil::send_ws_data(out);
         free(out);
     }

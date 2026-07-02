@@ -13,6 +13,9 @@
 
 static const char *TAG = "VAV_Controller";
 
+// 0 = Errors only, 1 = Info (default), 2 = Debug (all sensor prints)
+extern const int VERBOSE_MODE = 2;
+
 // --- VAV Configuration ---
 const PcaChannelConfig pca_config[8] = {
     {PcaSensorType::AHT21_ENS160, "room1_1"},
@@ -36,6 +39,14 @@ const int output_config_size = sizeof(output_config) / sizeof(output_config[0]);
 // -------------------------
 
 extern "C" void app_main(void) {
+  if (VERBOSE_MODE == 0) {
+      esp_log_level_set("*", ESP_LOG_ERROR);
+  } else if (VERBOSE_MODE == 1) {
+      esp_log_level_set("*", ESP_LOG_INFO);
+  } else if (VERBOSE_MODE >= 2) {
+      esp_log_level_set("*", ESP_LOG_DEBUG);
+  }
+
   ESP_LOGI(TAG, "Starting VAV Controller Firmware");
 
   StateManager::init();
