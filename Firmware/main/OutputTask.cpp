@@ -22,12 +22,11 @@ void OutputTask::init() {
     // Hardware setup before task runs
 }
 
-void OutputTask::start() {
-    xTaskCreate(OutputTask::taskLoop, "OutputTask", 4096, NULL, 5, NULL);
-}
-
 void OutputTask::taskLoop(void* arg) {
-    ESP_LOGI(TAG, "Starting Output Task Loop");
+    uint32_t delay_ms = (uint32_t)(uintptr_t)arg;
+    if (delay_ms == 0) delay_ms = 50;
+
+    ESP_LOGI(TAG, "Starting Output Task Loop with %lu ms delay", delay_ms);
 
     int ledc_channel_counter = 0;
 
@@ -76,6 +75,6 @@ void OutputTask::taskLoop(void* arg) {
                 }
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(50)); // 20Hz update rate
+        vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }

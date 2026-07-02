@@ -44,7 +44,10 @@ void VavWifiManager::websocketEventHandler(void* handler_args, esp_event_base_t 
     }
 }
 
-void VavWifiManager::publishTask(void* arg) {
+void VavWifiManager::syncTaskLoop(void* arg) {
+    uint32_t delay_ms = (uint32_t)(uintptr_t)arg;
+    if (delay_ms == 0) delay_ms = 1000;
+
     while (1) {
         if (client != NULL && esp_websocket_client_is_connected(client)) {
             char* out = StateManager::getJsonString();
@@ -54,7 +57,7 @@ void VavWifiManager::publishTask(void* arg) {
                 free(out);
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(1000)); // Publish at 1Hz frequency
+        vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }
 
@@ -75,7 +78,4 @@ void VavWifiManager::init() {
     client = esp_websocket_client_init(&websocket_cfg);
     esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, (esp_event_handler_t)websocketEventHandler, (void *)client);
     esp_websocket_client_start(client);
-    
-    // Start FreeRTOS task to publish state at 1Hz
-    xTaskCreate(publishTask, "vav_publish_task", 4096, NULL, 5, NULL);
 }

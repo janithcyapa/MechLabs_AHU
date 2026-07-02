@@ -25,12 +25,11 @@ void InputTask::init() {
     // Basic ADC initialization. If ADC config becomes complex, it can go here.
 }
 
-void InputTask::start() {
-    xTaskCreate(InputTask::taskLoop, "InputTask", 4096, NULL, 5, NULL);
-}
-
 void InputTask::taskLoop(void* arg) {
-    ESP_LOGI(TAG, "Starting Input Task Loop");
+    uint32_t delay_ms = (uint32_t)(uintptr_t)arg;
+    if (delay_ms == 0) delay_ms = 100;
+
+    ESP_LOGI(TAG, "Starting Input Task Loop with %lu ms delay", delay_ms);
 
     ESP_LOGI(TAG, "Starting Input Task Loop");
 
@@ -96,6 +95,6 @@ void InputTask::taskLoop(void* arg) {
                 }
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(100)); // 10Hz sampling
+        vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }

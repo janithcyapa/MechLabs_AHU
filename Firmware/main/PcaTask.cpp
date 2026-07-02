@@ -19,12 +19,11 @@ void PcaTask::init() {
     // Initialization handled inside the task to avoid locking up main
 }
 
-void PcaTask::start() {
-    xTaskCreate(PcaTask::taskLoop, "PcaTask", 4096, NULL, 5, NULL);
-}
-
 void PcaTask::taskLoop(void* arg) {
-    ESP_LOGI(TAG, "Starting PCA Task Loop");
+    uint32_t delay_ms = (uint32_t)(uintptr_t)arg;
+    if (delay_ms == 0) delay_ms = 1000;
+
+    ESP_LOGI(TAG, "Starting PCA Task Loop with %lu ms delay", delay_ms);
 
     i2c_master_bus_handle_t bus = i2c_util::get_bus_handle();
     if (!bus) {
@@ -106,6 +105,6 @@ void PcaTask::taskLoop(void* arg) {
             pca.disable_all();
         }
 
-        vTaskDelay(pdMS_TO_TICKS(1000)); // 1Hz Loop
+        vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }

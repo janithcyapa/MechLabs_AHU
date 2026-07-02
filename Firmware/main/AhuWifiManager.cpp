@@ -11,7 +11,6 @@ extern const int VERBOSE_MODE;
 void AhuWifiManager::wsCommandCallback(const char* payload) {
     if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Received WS payload: %s", payload);
     StateManager::mergeJson(payload);
-    broadcastState();
 }
 
 void AhuWifiManager::init() {
@@ -34,5 +33,15 @@ void AhuWifiManager::broadcastState() {
         if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Broadcasting state: %s", out);
         ServerUtil::send_ws_data(out);
         free(out);
+    }
+}
+
+void AhuWifiManager::syncTaskLoop(void* arg) {
+    uint32_t delay_ms = (uint32_t)(uintptr_t)arg;
+    if (delay_ms == 0) delay_ms = 1000;
+
+    while (1) {
+        broadcastState();
+        vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }
