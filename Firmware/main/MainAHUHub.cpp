@@ -14,8 +14,8 @@ extern "C" void app_main(void) {
 
   // Play welcome sequence
   setSystemState(SystemState::WELCOME);
-  vTaskDelay(pdMS_TO_TICKS(1000));
-  setSystemState(SystemState::ERROR);
+  // vTaskDelay(pdMS_TO_TICKS(1000));
+  // setSystemState(SystemState::ERROR);
 
   while (1) {
     vTaskDelay(pdMS_TO_TICKS(1000));
