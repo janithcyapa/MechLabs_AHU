@@ -1,11 +1,11 @@
-import { FaThermometerHalf, FaWind, FaTachometerAlt } from 'react-icons/fa';
+import { FaThermometerHalf, FaWind, FaTachometerAlt, FaDatabase, FaCircle } from 'react-icons/fa';
 import { WiHumidity } from 'react-icons/wi';
 import { MdOutlineCo2 } from 'react-icons/md';
 import { getCo2Color, getHumColor, getTempColor } from '../utils/colors';
 import { useTelemetry } from '../utils/TelemetryContext';
 
 export default function InformationWidget() {
-  const { systemData } = useTelemetry();
+  const { systemData, isRecording, recordedPoints, experimentName } = useTelemetry();
 
   return (
     <div className="flex gap-4 ">
@@ -129,6 +129,22 @@ export default function InformationWidget() {
           </div>
         </div>
       </div>
+
+      {/* Recording Indicator */}
+      {isRecording && (
+        <div className="relative flex flex-col justify-center h-16 px-4 min-w-40 rounded-xl shadow-[0_0_15px_rgba(239,68,68,0.2)] overflow-hidden shrink-0 border border-red-500/30 bg-[#1a2332]">
+          <div className="relative z-10 flex items-center gap-1.5 mb-1 text-red-400">
+            <FaCircle className="text-[10px] animate-pulse" />
+            <span className="text-[10px] font-bold tracking-widest uppercase">{experimentName}</span>
+          </div>
+          <div className="relative z-10 flex items-center gap-2">
+            <FaDatabase className="text-cyan-500 text-[13px]" />
+            <span className="font-mono font-bold text-lg text-cyan-400 tracking-tighter">{recordedPoints}</span>
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">pts</span>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

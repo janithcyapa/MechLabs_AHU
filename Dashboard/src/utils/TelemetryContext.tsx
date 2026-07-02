@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { type ReactNode } from "react";
 import type { TelemetryContextType, FormattedTelemetryState } from "./types";
+import { startExperiment, stopExperiment, saveDatapoint, checkStorageQuota } from "./db";
 
 const TelemetryContext = createContext<TelemetryContextType | undefined>(
   undefined,
@@ -36,6 +37,34 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
   });
 
   const ws = useRef<WebSocket | null>(null);
+
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [experimentName, setExperimentName] = useState<string | null>(null);
+  const [recordInterval, setRecordInterval] = useState<number>(10);
+  const [storageWarning, setStorageWarning] = useState<boolean>(false);
+  const [recordedPoints, setRecordedPoints] = useState<number>(0);
+
+  const systemDataRef = useRef(systemData);
+  useEffect(() => {
+    systemDataRef.current = systemData;
+  }, [systemData]);
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval>;
+    if (isRecording && experimentName) {
+      intervalId = setInterval(async () => {
+        try {
+          await saveDatapoint(experimentName, systemDataRef.current);
+          setRecordedPoints(prev => prev + 1);
+          const quota = await checkStorageQuota();
+          setStorageWarning(quota.warning);
+        } catch (e) {
+          console.error("Failed to save datapoint", e);
+        }
+      }, recordInterval * 1000);
+    }
+    return () => clearInterval(intervalId);
+  }, [isRecording, experimentName, recordInterval]);
 
   useEffect(() => {
     let reconnectTimeout: ReturnType<typeof setTimeout>;
@@ -162,12 +191,42 @@ export const TelemetryProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const startRecording = async (name: string, interval: number) => {
+    try {
+      await startExperiment(name, interval);
+      setExperimentName(name);
+      setRecordInterval(interval);
+      setRecordedPoints(0);
+      setIsRecording(true);
+    } catch (e) {
+      console.error("Failed to start recording", e);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (experimentName) {
+      try {
+        await stopExperiment(experimentName);
+      } catch (e) {
+        console.error("Failed to stop recording", e);
+      }
+    }
+    setIsRecording(false);
+    setExperimentName(null);
+  };
+
   return (
     <TelemetryContext.Provider
       value={{
         isConnected,
         sendCommand,
         systemData,
+        isRecording,
+        experimentName,
+        startRecording,
+        stopRecording,
+        storageWarning,
+        recordedPoints,
       }}
     >
       {children}

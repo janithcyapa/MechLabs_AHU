@@ -39,6 +39,12 @@ export interface TelemetryContextType {
     systemData: FormattedTelemetryState;
     sendCommand: (topic: string, payload: any) => void;
     isConnected: boolean;
+    isRecording: boolean;
+    experimentName: string | null;
+    startRecording: (name: string, interval: number) => Promise<void>;
+    stopRecording: () => Promise<void>;
+    storageWarning: boolean;
+    recordedPoints: number;
 }
 
 export interface WebSocketMessage {

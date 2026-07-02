@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
-  FaDatabase,
   FaPlay,
   FaStop,
   FaFileDownload,
   FaChartLine,
   FaTrashAlt,
   FaClock,
+  FaExclamationTriangle,
+  FaDatabase
 } from "react-icons/fa";
 import {
   LineChart,
@@ -16,423 +17,404 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { useTelemetry } from "../../utils/TelemetryContext";
-import { dummyHvacData as hvacData, dummyActuators as actuators } from "../../utils/dummyData";
+import {
+  getExperiments,
+  getExperimentData,
+  deleteExperiment,
+  type ExperimentMeta,
+  type DataPoint,
+} from "../../utils/db";
 
-// --- Types & Categories ---
-const CATEGORIES = {
-  ambient: {
-    label: "Ambient",
-    sensors: ["amb_t", "amb_h", "amb_co2"],
-  },
-  return: { label: "Return Air", sensors: ["ret_t", "ret_h", "ret_co2"] },
-  mixed: { label: "Mixed Air", sensors: ["mix_t", "mix_h", "mix_co2"] },
-  cooled: { label: "Cooled Air", sensors: ["cool_t", "cool_h", "cool_p"] },
-  heated: { label: "Heated Air", sensors: ["heat_t", "heat_h", "heat_p"] },
-  release: { label: "Release Air", sensors: ["rel_t", "rel_h", "rel_co2", "rel_flow"] },
-  rooms: {
-    label: "Zones/Rooms",
-    sensors: ["r1_t", "r1_h", "r1_co2", "r2_t", "r2_h", "r2_co2"],
-  },
-  controls: {
-    label: "Control Signals",
-    sensors: ["blower_cmd", "cool_cmd", "heat_cmd", "hum_cmd", "mix_cmd"],
-  },
+// Helper to flatten nested system data for recharts and tables
+const flattenData = (data: any, prefix = ''): Record<string, number> => {
+  let result: Record<string, number> = {};
+  for (const key in data) {
+    if (typeof data[key] === 'object' && data[key] !== null) {
+      result = { ...result, ...flattenData(data[key], `${prefix}${key}_`) };
+    } else if (typeof data[key] === 'number' || typeof data[key] === 'boolean') {
+      result[`${prefix}${key}`] = Number(data[key]);
+    }
+  }
+  return result;
 };
 
-// --- Helper: Format Names for Legend & Tooltip ---
-const formatLegendName = (key: string) => {
-  const parts = key.split('_');
-  if (parts.length !== 2) return key;
-
-  const prefixMap: Record<string, string> = {
-    amb: 'Ambient',
-    ret: 'Return',
-    mix: 'Mixed',
-    cool: 'Cooler',
-    heat: 'Heater',
-    rel: 'Release',
-    r1: 'Room Left',
-    r2: 'Room Right',
-    blower: 'Blower',
-    hum: 'Humidifier',
-  };
-
-  const suffixMap: Record<string, string> = {
-    cmd: 'Command',
-    t: 'Temp.',
-    h: 'Humid.',
-    p: 'Pres.',
-    co2: 'CO2',
-    flow: 'Flow',
-  };
-
-  const prefix = prefixMap[parts[0]] || (parts[0].charAt(0).toUpperCase() + parts[0].slice(1));
-  const suffix = suffixMap[parts[1]] || parts[1];
-  
-  return `${prefix} ${suffix}`;
-};
-
-// --- Helper: Assign Specific Colors ---
-const getLineColor = (key: string) => {
-  // Controls
-  if (key === 'mix_cmd') return '#94a3b8';    // Grey
-  if (key === 'cool_cmd') return '#38bdf8';   // Light Blue
-  if (key === 'heat_cmd') return '#ef4444';   // Red
-  if (key === 'hum_cmd') return '#22d3ee';    // Cyan / Blue
-  if (key === 'blower_cmd') return '#22c55e'; // Green
-  
-  // Sensors
-  if (key.endsWith('_t')) return '#3b82f6';   // Blue
-  if (key.endsWith('_h')) return '#f59e0b';   // Yellow / Orange
-  if (key.endsWith('_co2')) return '#10b981'; // Green
-  if (key.endsWith('_p')) return '#a855f7';   // Purple
-  
-  return '#ffffff'; // Fallback
+// Generate a random stable color based on string
+const stringToColor = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
 };
 
 export default function DataRecorderPanel() {
-  const [isRecording, setIsRecording] = useState(false);
-  const [timeStep, setTimeStep] = useState(10); // Default to 10 seconds
-  const [activeCategories, setActiveCategories] = useState<string[]>([
-    "ambient",
-    "controls",
-  ]);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const fullHistoryRef = useRef<any[]>([]);
+  const { isRecording, experimentName, startRecording, stopRecording, storageWarning } = useTelemetry();
+  
+  const [inputExpName, setInputExpName] = useState("");
+  const [inputInterval, setInputInterval] = useState(10);
+  
+  const [experiments, setExperiments] = useState<ExperimentMeta[]>([]);
+  const [selectedExp, setSelectedExp] = useState<string | null>(null);
+  const [expData, setExpData] = useState<DataPoint[]>([]);
+  
+  const [activeColumns, setActiveColumns] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
+  const rowsPerPage = 10;
 
-  const latestDataRef = useRef({ hvacData, actuators });
-
-  useEffect(() => {
-    latestDataRef.current = { hvacData, actuators };
-  }, [hvacData, actuators]);
-
-  const toggleCategory = (cat: string) => {
-    setActiveCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
-    );
-  };
-
-  const resetData = () => {
-    if (window.confirm("Clear all recorded buffer?")) {
-      setChartData([]);
-      fullHistoryRef.current = [];
+  // Poll experiments list
+  const fetchExperiments = async () => {
+    try {
+      const exps = await getExperiments();
+      // Sort newest first
+      exps.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setExperiments(exps);
+    } catch (e) {
+      console.error("Failed to fetch experiments", e);
     }
   };
 
-  // Recording Logic
   useEffect(() => {
-    let interval: any;
+    fetchExperiments();
+    const interval = setInterval(fetchExperiments, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
-    if (isRecording) {
-      const recordPoint = () => {
-        const { hvacData: liveHvac, actuators: liveActuators } = latestDataRef.current;
-        
-        const timestamp = new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        });
+  // Poll selected experiment data
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    
+    const fetchExpData = async () => {
+      if (!selectedExp) return;
+      try {
+        const data = await getExperimentData(selectedExp);
+        setExpData(data);
+      } catch (e) {
+        console.error("Failed to fetch experiment data", e);
+      }
+    };
 
-        const currentSnapshot: Record<string, number> = {
-          // Ambient
-          amb_t: liveHvac.ambient.temp,
-          amb_h: liveHvac.ambient.hum,
-          amb_co2: liveHvac.ambient.co2 || 0,
-          // Return
-          ret_t: liveHvac.return.temp,
-          ret_h: liveHvac.return.hum,
-          ret_co2: liveHvac.return.co2 || 0,
-          // Mixed
-          mix_t: liveHvac.economizer.temp,
-          mix_h: liveHvac.economizer.hum,
-          mix_co2: liveHvac.economizer.co2 || 0,
-          // Cooling
-          cool_t: liveHvac.afterCooling.temp,
-          cool_h: liveHvac.afterCooling.hum,
-          cool_p: liveHvac.afterCooling.pressure || 0,
-          // Heating
-          heat_t: liveHvac.afterHeating.temp,
-          heat_h: liveHvac.afterHeating.hum,
-          heat_p: liveHvac.afterHeating.pressure || 0,
-          // Release
-          rel_t: liveHvac.releaseAir.temp,
-          rel_h: liveHvac.releaseAir.hum,
-          rel_co2: liveHvac.releaseAir.co2 || 0,
-          rel_flow: liveHvac.releaseAir.flowrate || 0,
-          // Controls (Actuators)
-          blower_cmd: liveActuators?.blower || 0,
-          cool_cmd: liveActuators?.coolingCoil || 0,
-          heat_cmd: liveActuators?.heatingCoil || 0,
-          hum_cmd: liveActuators?.humidifier || 0,
-          mix_cmd: liveActuators?.intakeOpening || 0,
-          // Zones
-          r1_t: liveHvac.roomLeft?.temp || 0,
-          r1_h: liveHvac.roomLeft?.hum || 0,
-          r1_co2: liveHvac.roomLeft?.co2 || 0,
-          r2_t: liveHvac.roomRight?.temp || 0,
-          r2_h: liveHvac.roomRight?.hum || 0,
-          r2_co2: liveHvac.roomRight?.co2 || 0,
+    if (selectedExp) {
+      fetchExpData();
+      if (isRecording && experimentName === selectedExp) {
+        interval = setInterval(fetchExpData, 2000);
+      }
+    } else {
+      setExpData([]);
+    }
 
-          vav1_cmd: 40,
-        };
+    return () => clearInterval(interval);
+  }, [selectedExp, isRecording, experimentName]);
 
-        // Keep full history in memory for CSV export without slowing down React
-        fullHistoryRef.current.push({ time: timestamp, ...currentSnapshot });
+  const handleStart = () => {
+    if (!inputExpName.trim()) {
+      alert("Please enter an experiment name.");
+      return;
+    }
+    if (experiments.find(e => e.name === inputExpName)) {
+      alert("Experiment name already exists.");
+      return;
+    }
+    startRecording(inputExpName, inputInterval);
+    setInputExpName("");
+  };
 
-        setChartData((prev) => {
-          const newData = [...prev, { time: timestamp, ...currentSnapshot }];
-          return newData.slice(-100); // Keep only last 100 points for the visual chart
-        });
-      };
+  const handleDelete = async (name: string) => {
+    if (confirm(`Are you sure you want to delete experiment "${name}"?`)) {
+      await deleteExperiment(name);
+      if (selectedExp === name) setSelectedExp(null);
+      fetchExperiments();
+    }
+  };
 
-      recordPoint();
-      interval = setInterval(recordPoint, timeStep * 1000);
+  const handleDownloadCSV = async (name: string) => {
+    const data = await getExperimentData(name);
+    if (data.length === 0) {
+      alert("No data available to download.");
+      return;
     }
     
-    return () => clearInterval(interval);
-  }, [isRecording, timeStep]); 
-
-  const saveToCSV = () => {
-    if (fullHistoryRef.current.length === 0) return;
-    const headers = [
-      "Time",
-      ...Object.values(CATEGORIES).flatMap((c) => c.sensors),
-    ].join(",");
-    const rows = fullHistoryRef.current.map((d) =>
-      [
-        d.time,
-        ...Object.values(CATEGORIES)
-          .flatMap((c) => c.sensors)
-          .map((s) => d[s] ?? 0),
-      ].join(","),
-    );
-    const blob = new Blob([[headers, ...rows].join("\n")], {
-      type: "text/csv",
-    });
+    const flat = data.map(dp => ({ timestamp: dp.timestamp, ...flattenData(dp.data) }));
+    const headers = Object.keys(flat[0]).join(',');
+    const rows = flat.map(row => Object.values(row).join(',')).join('\n');
+    const csv = `${headers}\n${rows}`;
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `HVAC_Log_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `${name}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
+  const handleVisualize = (name: string) => {
+    setSelectedExp(name);
+    setPage(0);
+  };
+
+  const toggleColumn = (col: string) => {
+    setActiveColumns(prev => 
+      prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]
+    );
+  };
+
+  // Prepare flattened data for charts/table
+  const flatData = expData.map(dp => ({
+    timeLabel: new Date(dp.timestamp).toLocaleTimeString(),
+    fullTimestamp: dp.timestamp,
+    ...flattenData(dp.data)
+  }));
+  
+  const allAvailableColumns = flatData.length > 0 
+    ? Object.keys(flatData[0]).filter(k => k !== 'timeLabel' && k !== 'fullTimestamp') 
+    : [];
+
+  const paginatedData = flatData.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  const totalPages = Math.ceil(flatData.length / rowsPerPage);
+
   return (
     <div className="flex flex-col gap-6 mt-8 animate-in fade-in duration-500">
-      {/* CONFIGURATION BAR */}
-      <div className="flex flex-col xl:flex-row gap-4 w-full ">
-        <div className="flex flex-col xl:flex-row gap-4 w-full ">
-          {/* Category Selection */}
-          <div className="flex-1 bg-[#1a2332] p-4 rounded-xl border border-slate-700 shadow-lg">
-            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <FaDatabase className="text-cyan-500" /> Sensor Groups
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(CATEGORIES).map(([key, cat]) => (
-                <button
-                  key={key}
-                  onClick={() => toggleCategory(key)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border 
-                  ${
-                    activeCategories.includes(key)
-                      ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
-                      : "bg-slate-800/40 border-slate-700 text-slate-500 hover:border-slate-600"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      
+      {storageWarning && (
+        <div className="bg-red-500/20 border border-red-500 text-red-200 p-4 rounded-xl flex items-center gap-3">
+          <FaExclamationTriangle className="text-xl" />
+          <span><strong>Storage Warning:</strong> IndexedDB quota is nearing its limit. Please export and delete old experiments.</span>
+        </div>
+      )}
 
-          {/* Time Step & Actions */}
-          <div className="bg-[#1a2332] p-4 rounded-xl border border-slate-700 shadow-lg flex items-center gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                <FaClock /> Interval (sec)
-              </span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={timeStep}
-                  onChange={(e) =>
-                    setTimeStep(Math.max(1, Number(e.target.value)))
-                  }
-                  className="no-spinner w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-cyan-400 outline-none focus:border-cyan-500/50 transition-colors text-center"
-                />
-                {isRecording && (
-                  <div className="w-2 h-2 rounded-full bg-cyan-500 animate-ping ml-1" />
-                )}
-              </div>
-            </div>
+      {/* --- CONFIGURATION SECTION --- */}
+      <div className="bg-[#1a2332] p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col md:flex-row gap-6 items-end">
+        
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+            <FaDatabase /> Experiment Name
+          </label>
+          <input
+            type="text"
+            placeholder="e.g., Cooling_Test_01"
+            value={inputExpName}
+            onChange={(e) => setInputExpName(e.target.value)}
+            disabled={isRecording}
+            className="w-full bg-[#0f172a] text-white px-4 py-3 rounded-xl border border-slate-700 outline-none focus:border-cyan-500 transition-colors"
+          />
+        </div>
 
-            <div className="flex gap-2 h-9 items-center mt-4">
-              <button
-                onClick={() => setIsRecording(!isRecording)}
-                className={`px-4 h-full rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg
-                ${!isRecording ? "bg-emerald-600 hover:bg-emerald-500 text-white" : "bg-red-600 text-white"}`}
-              >
-                {isRecording ? (
-                  <>
-                    <FaStop className="text-[8px]" /> Stop
-                  </>
-                ) : (
-                  <>
-                    <FaPlay className="text-[8px]" /> Start
-                  </>
-                )}
-              </button>
+        <div className="w-32 flex flex-col gap-2">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+            <FaClock /> Interval (sec)
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={inputInterval}
+            onChange={(e) => setInputInterval(Number(e.target.value))}
+            disabled={isRecording}
+            className="w-full bg-[#0f172a] text-white px-4 py-3 rounded-xl border border-slate-700 outline-none focus:border-cyan-500 transition-colors text-center font-mono"
+          />
+        </div>
 
-              <button
-                onClick={resetData}
-                className="w-9 h-9 flex items-center justify-center bg-slate-800/50 hover:bg-red-900/20 text-slate-500 hover:text-red-400 rounded-lg border border-slate-700 transition-colors"
-                title="Reset Buffer"
-              >
-                <FaTrashAlt size={12} />
-              </button>
-
-              <button
-                onClick={saveToCSV}
-                disabled={fullHistoryRef.current.length === 0}
-                className="w-9 h-9 flex items-center justify-center bg-slate-800/50 hover:bg-slate-700 text-slate-400 rounded-lg border border-slate-700 disabled:opacity-30 transition-colors"
-              >
-                <FaFileDownload size={14} />
-              </button>
-            </div>
-          </div>
+        <div>
+          {!isRecording ? (
+            <button
+              onClick={handleStart}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+            >
+              <FaPlay /> Start
+            </button>
+          ) : (
+            <button
+              onClick={stopRecording}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse"
+            >
+              <FaStop /> Stop
+            </button>
+          )}
         </div>
       </div>
 
-      {/* GRAPH GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {activeCategories.map((catKey) => {
-          const cat = (CATEGORIES as any)[catKey];
-          const isControls = catKey === 'controls';
+      {/* --- EXPERIMENTS TABLE --- */}
+      <div className="bg-[#1a2332] rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+        <div className="bg-[#0f172a] p-4 border-b border-slate-700">
+          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Saved Experiments</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-800/50 text-[10px] uppercase tracking-widest text-slate-400">
+                <th className="p-4 border-b border-slate-700">Name</th>
+                <th className="p-4 border-b border-slate-700">Date/Time</th>
+                <th className="p-4 border-b border-slate-700">Data Points</th>
+                <th className="p-4 border-b border-slate-700">Status</th>
+                <th className="p-4 border-b border-slate-700 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {experiments.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-500">No experiments recorded yet.</td>
+                </tr>
+              ) : (
+                experiments.map((exp) => (
+                  <tr key={exp.name} className={`border-b border-slate-800 hover:bg-slate-800/30 transition-colors ${selectedExp === exp.name ? 'bg-cyan-900/10' : ''}`}>
+                    <td className="p-4 font-mono text-slate-200">{exp.name}</td>
+                    <td className="p-4 text-xs text-slate-400">{new Date(exp.timestamp).toLocaleString()}</td>
+                    <td className="p-4 font-mono text-cyan-400">{exp.datapointsCount}</td>
+                    <td className="p-4">
+                      {exp.status === 'recording' ? (
+                        <span className="text-xs font-bold text-red-400 flex items-center gap-1 animate-pulse"><div className="w-2 h-2 rounded-full bg-red-500"></div> Recording...</span>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-500">Completed</span>
+                      )}
+                    </td>
+                    <td className="p-4 flex justify-end gap-2">
+                      <button onClick={() => handleDownloadCSV(exp.name)} className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors" title="Download CSV">
+                        <FaFileDownload />
+                      </button>
+                      <button onClick={() => handleDelete(exp.name)} className="p-2 rounded-lg bg-slate-800 hover:bg-red-900/50 text-red-400 transition-colors" title="Delete">
+                        <FaTrashAlt />
+                      </button>
+                      <button onClick={() => handleVisualize(exp.name)} className={`px-4 py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors ${selectedExp === exp.name ? 'bg-cyan-600 text-white' : 'bg-cyan-900/30 text-cyan-400 hover:bg-cyan-800/50'}`}>
+                        <FaChartLine className="inline mr-2"/> Visualize
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* --- VISUALIZATION SECTION --- */}
+      {selectedExp && (
+        <div className="bg-[#1a2332] rounded-2xl border border-slate-700 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
           
-          const rightAxisDomain = isControls ? [0, 1] : [0, 2000];
+          <div className="bg-[#0f172a] p-6 border-b border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-white tracking-widest uppercase flex items-center gap-3">
+                <FaChartLine className="text-cyan-500" /> Visualization
+              </h3>
+              <p className="text-xs text-cyan-400 mt-1 font-mono">{selectedExp} - {flatData.length} data points</p>
+            </div>
+          </div>
 
-          return (
-            <div
-              key={catKey}
-              className="bg-[#1a2332] p-5 rounded-2xl border border-slate-700 shadow-xl min-h-75 flex flex-col"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <FaChartLine className="text-cyan-500" /> {cat.label} Trend
-                </h3>
-                <span className="text-[9px] font-mono text-slate-600 uppercase">
-                  Live Buffer: {chartData.length} pts (Total Saved: {fullHistoryRef.current.length})
-                </span>
-              </div>
-
-              <div className="flex-1 w-full min-h-50">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 15, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#1e293b"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="time"
-                      stroke="#475569"
-                      fontSize={9}
-                      tickMargin={10}
-                      hide={chartData.length === 0}
-                    />
-                    
-                    {/* LEFT Y-AXIS */}
-                    <YAxis
-                      yAxisId="left"
-                      orientation="left"
-                      stroke="#475569"
-                      fontSize={9}
-                      domain={[0, 100]}
-                    />
-                    
-                    {/* RIGHT Y-AXIS */}
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      stroke="#475569"
-                      fontSize={9}
-                      domain={rightAxisDomain}
-                    />
-
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#0f172a",
-                        border: "1px solid #334155",
-                        borderRadius: "8px",
-                        fontSize: "10px",
-                      }}
-                    />
-                    <Legend
-                      iconType="circle"
-                      wrapperStyle={{ fontSize: "10px", paddingTop: "10px" }}
-                    />
-                    
-                    {cat.sensors.map((s: string) => {
-                      const isRightAxis = s.endsWith('_co2') || 
-                                          s.endsWith('_p') || 
-                                          ['cool_cmd', 'heat_cmd', 'hum_cmd'].includes(s);
-
-                      // Get specific color once per line
-                      const lineColor = getLineColor(s);
-
-                      return (
-                        <Line
-                          key={s}
-                          yAxisId={isRightAxis ? "right" : "left"} 
-                          type="monotone"
-                          dataKey={s} 
-                          name={formatLegendName(s)} 
-                          stroke={lineColor} 
-                          strokeWidth={2}
-                          dot={false}
-                          isAnimationActive={false}
-                          // INLINED LABEL to explicitly force the fill color
-                          label={(props: any) => {
-                            const { x, y, value, index } = props;
-                            if (index === chartData.length - 1 && chartData.length > 0) {
-                              const formattedValue = typeof value === 'number' ? Number(value).toFixed(1) : value;
-                              return (
-                                <text 
-                                  x={x - 8} 
-                                  y={y} 
-                                  dy={-8} 
-                                  fill={lineColor} // Forces the text color to match exactly
-                                  fontSize={11} 
-                                  fontWeight="bold"
-                                  fontFamily="monospace"
-                                  textAnchor="end"
-                                >
-                                  {formattedValue}
-                                </text>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                      );
-                    })}
-                  </LineChart>
-                </ResponsiveContainer>
+          <div className="p-6">
+            
+            {/* Column Selector */}
+            <div className="mb-8">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Select Columns to Visualize</h4>
+              <div className="flex flex-wrap gap-2">
+                {allAvailableColumns.map(col => {
+                  const isActive = activeColumns.includes(col);
+                  return (
+                    <button
+                      key={col}
+                      onClick={() => toggleColumn(col)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono transition-all border 
+                      ${isActive
+                        ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
+                        : "bg-slate-800/40 border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400"
+                      }`}
+                    >
+                      {col}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          );
-        })}
 
-        {activeCategories.length === 0 && (
-          <div className="col-span-full h-64 border-2 border-dashed border-slate-800 rounded-2xl flex items-center justify-center text-slate-600 text-xs uppercase tracking-widest">
-            Select a sensor group to display charts
+            {/* Dynamic Charts Grid */}
+            {activeColumns.length > 0 ? (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                {activeColumns.map(col => (
+                  <div key={col} className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 h-64">
+                    <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">{col}</h5>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={flatData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="timeLabel" stroke="#475569" fontSize={10} tickMargin={10} />
+                        <YAxis stroke="#475569" fontSize={10} domain={['auto', 'auto']} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", fontSize: "12px" }}
+                          itemStyle={{ color: "#e2e8f0" }}
+                          labelStyle={{ color: "#94a3b8", marginBottom: "4px" }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey={col}
+                          stroke={stringToColor(col)}
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4, strokeWidth: 0 }}
+                          isAnimationActive={false} // Disable animation for performance on live update
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex justify-center items-center h-32 bg-[#0f172a] rounded-xl border border-slate-800 border-dashed mb-8">
+                <span className="text-slate-500 text-sm">Select columns above to display graphs</span>
+              </div>
+            )}
+
+            {/* Paginated Raw Data Table */}
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Raw Data ({flatData.length} total)</h4>
+                
+                <div className="flex gap-2">
+                  <button 
+                    disabled={page === 0} 
+                    onClick={() => setPage(p => p - 1)}
+                    className="px-3 py-1 bg-slate-800 text-slate-300 rounded disabled:opacity-50"
+                  >Prev</button>
+                  <span className="text-xs text-slate-400 py-1">Page {page + 1} of {Math.max(1, totalPages)}</span>
+                  <button 
+                    disabled={page >= totalPages - 1} 
+                    onClick={() => setPage(p => p + 1)}
+                    className="px-3 py-1 bg-slate-800 text-slate-300 rounded disabled:opacity-50"
+                  >Next</button>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto border border-slate-800 rounded-xl">
+                <table className="w-full text-left border-collapse whitespace-nowrap">
+                  <thead>
+                    <tr className="bg-slate-900 text-[10px] uppercase tracking-widest text-slate-400">
+                      <th className="p-3 border-b border-slate-700 sticky left-0 bg-slate-900">Timestamp</th>
+                      {activeColumns.map(col => (
+                        <th key={col} className="p-3 border-b border-slate-700">{col}</th>
+                      ))}
+                      {activeColumns.length === 0 && (
+                        <th className="p-3 border-b border-slate-700">Select columns to view data</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedData.map((row, idx) => (
+                      <tr key={idx} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                        <td className="p-3 font-mono text-[11px] text-slate-400 sticky left-0 bg-[#1a2332]">{row.timeLabel}</td>
+                        {activeColumns.map(col => (
+                          <td key={col} className="p-3 font-mono text-[11px] text-cyan-400">{(row[col] as number)?.toFixed(3) ?? '-'}</td>
+                        ))}
+                        {activeColumns.length === 0 && <td></td>}
+                      </tr>
+                    ))}
+                    {paginatedData.length === 0 && (
+                      <tr><td colSpan={activeColumns.length + 1} className="p-4 text-center text-slate-500">No data available</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
     </div>
   );
 }
