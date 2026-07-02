@@ -4,7 +4,6 @@
 class VavWifiManager {
 public:
     static void init();
-    static void updateLocalState(const char* key, double value);
     
 private:
     static void publishTask(void* arg);

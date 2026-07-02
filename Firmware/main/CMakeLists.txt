@@ -7,7 +7,7 @@ else()
 endif()
 
 idf_component_register(
-    SRCS "${SRC_FILES}" "HardwareUtils.cpp"
+    SRCS "${SRC_FILES}" "HardwareUtils.cpp" "StateManager.cpp" "PcaTask.cpp" "InputTask.cpp" "OutputTask.cpp"
     INCLUDE_DIRS "."
     REQUIRES
     cjson 
