@@ -3,6 +3,8 @@
 #include "cJSON.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include <string>
+#include <unordered_set>
 
 class StateManager {
 public:
@@ -16,7 +18,8 @@ public:
     static double getDouble(const char* key, double default_val = 0.0);
     
     // JSON generation
-    static char* getJsonString();
+    static char* getJsonString(bool clear_dirty = false);
+    static char* getDirtyJsonString();
     
     // Merge incoming JSON string (e.g. from websocket)
     static void mergeJson(const char* json_str);
@@ -24,4 +27,5 @@ public:
 private:
     static cJSON* state;
     static SemaphoreHandle_t mutex;
+    static std::unordered_set<std::string> dirty_keys;
 };

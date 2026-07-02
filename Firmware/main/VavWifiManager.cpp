@@ -48,11 +48,19 @@ void VavWifiManager::syncTaskLoop(void* arg) {
     uint32_t delay_ms = (uint32_t)(uintptr_t)arg;
     if (delay_ms == 0) delay_ms = 1000;
 
+    static int tick_counter = 0;
+
     while (1) {
         if (client != NULL && esp_websocket_client_is_connected(client)) {
-            char* out = StateManager::getJsonString();
+            char* out;
+            if (tick_counter++ % 10 == 0) {
+                out = StateManager::getJsonString(true);
+            } else {
+                out = StateManager::getDirtyJsonString();
+            }
+            
             if (out) {
-                if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Publishing state: %s", out);
+                if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Publishing state (delta=%d): %s", (tick_counter-1)%10 != 0, out);
                 esp_websocket_client_send_text(client, out, strlen(out), pdMS_TO_TICKS(500));
                 free(out);
             }

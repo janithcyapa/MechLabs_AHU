@@ -40,8 +40,21 @@ void AhuWifiManager::syncTaskLoop(void* arg) {
     uint32_t delay_ms = (uint32_t)(uintptr_t)arg;
     if (delay_ms == 0) delay_ms = 1000;
 
+    static int tick_counter = 0;
+
     while (1) {
-        broadcastState();
+        char* out;
+        if (tick_counter++ % 10 == 0) {
+            out = StateManager::getJsonString(true); // Full state + clear dirty keys
+        } else {
+            out = StateManager::getDirtyJsonString(); // Delta state
+        }
+        
+        if (out) {
+            if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Broadcasting state (delta=%d): %s", (tick_counter-1)%10 != 0, out);
+            ServerUtil::send_ws_data(out);
+            free(out);
+        }
         vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }
