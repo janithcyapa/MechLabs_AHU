@@ -3,6 +3,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "VavWifiManager.h"
 
 static const char *TAG = "Vav_Controller";
 
@@ -11,6 +12,9 @@ extern "C" void app_main(void) {
 
   // Initialize Hardware Utilities (LED & Buzzer)
   initHardwareUtils();
+
+  // Initialize WiFi Station and WebSocket Client
+  VavWifiManager::init();
 
   // Play welcome sequence
   setSystemState(SystemState::WELCOME);

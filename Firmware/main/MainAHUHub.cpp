@@ -3,6 +3,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "AhuWifiManager.h"
 
 static const char *TAG = "AHU_Hub";
 
@@ -11,6 +12,9 @@ extern "C" void app_main(void) {
 
   // Initialize Hardware Utilities (LED & Buzzer)
   initHardwareUtils();
+
+  // Initialize WiFi Hotspot and WebSocket Server
+  AhuWifiManager::init();
 
   // Play welcome sequence
   setSystemState(SystemState::WELCOME);
