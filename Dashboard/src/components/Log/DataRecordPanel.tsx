@@ -19,6 +19,7 @@ import {
   Legend,
 } from "recharts";
 import { useTelemetry } from "../../utils/TelemetryContext";
+import { dummyHvacData as hvacData, dummyActuators as actuators } from "../../utils/dummyData";
 
 // --- Types & Categories ---
 const CATEGORIES = {
@@ -93,7 +94,6 @@ const getLineColor = (key: string) => {
 };
 
 export default function DataRecorderPanel() {
-  const { hvacData, actuators } = useTelemetry();
   const [isRecording, setIsRecording] = useState(false);
   const [timeStep, setTimeStep] = useState(10); // Default to 10 seconds
   const [activeCategories, setActiveCategories] = useState<string[]>([

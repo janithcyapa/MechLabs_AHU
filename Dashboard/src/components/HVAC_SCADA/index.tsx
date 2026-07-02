@@ -3,10 +3,9 @@ import { GiValve, GiHotSurface, GiSnowflake2 } from 'react-icons/gi';
 import { BiSolidSprayCan } from 'react-icons/bi';
 import { ComponentBlock, HorizontalDuct, SensorBlock, VerticalSensorBlock } from './AHUComponents';
 import type { RoomLayout } from '../../utils/types';
-import { useTelemetry } from '../../utils/TelemetryContext';
+import { dummyHvacData as hvacData, dummyActuators as actuators } from '../../utils/dummyData';
 
-export default function ScadaHVAC() {
-    const { hvacData, actuators } = useTelemetry();
+export default function HVAC_SCADA() {
 
     const roomsLayout: RoomLayout[] = [
         {

@@ -1,9 +1,9 @@
-import AmbientAirCluster from "../components/AHU/AmbientAirCluster";
+import AmbientAirCluster from "../components/InformationWidget";
 import DataRecorderPanel from "../components/Log/DataRecordPanel";
 
 export default function DataRecorder() {
 
-  
+
 
 
   return (
@@ -17,7 +17,7 @@ export default function DataRecorder() {
           <p className="text-slate-500 text-sm ml-6 uppercase tracking-wider font-mono">RECORDE AND SAVE DATA</p>
         </div>
         <div className="flex-1"></div>
-     
+
         <AmbientAirCluster />
       </div>
 

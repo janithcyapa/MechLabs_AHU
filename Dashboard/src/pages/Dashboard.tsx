@@ -1,8 +1,8 @@
-import ScadaHVAC from "../components/AHU/AHULive";
-import AmbientAirCluster from "../components/AHU/AmbientAirCluster";
+import HVAC_SCADA from "../components/HVAC_SCADA";
+import InformationWidget from "../components/InformationWidget";
 import SystemControllerPanel from "../components/Control/SystemControllerPanel";
 
-export default function ScadaAHU() {
+export default function Dashboard() {
   // const { hvacData, isConnected , actuators} = useTelemetry();
   return (
     <div className="min-h-screen container mx-auto bg-[#111827] text-slate-300 p-8 font-sans selection:bg-cyan-900">
@@ -12,15 +12,14 @@ export default function ScadaAHU() {
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
             Live Monitoring
           </h1>
-          <p className="text-slate-500 text-sm ml-6 uppercase tracking-wider font-mono">SCADA SYSTEM</p>
+          <p className="text-slate-500 text-sm ml-6 uppercase tracking-wider font-mono">Dashboard</p>
         </div>
         <div className="flex-1"></div>
-        {/* <ModeSelector/> */}
-        <AmbientAirCluster />
+        <InformationWidget />
       </div>
- 
-      <ScadaHVAC />
-      <SystemControllerPanel />
+
+      <HVAC_SCADA />
+      {/* <SystemControllerPanel /> */}
     </div>
   );
 }

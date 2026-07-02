@@ -12,56 +12,37 @@ const formatUptime = (totalSeconds: number): string => {
 };
 
 const Taskbar = () => {
-  const { telemetry, systemStatus, isConnected } = useTelemetry();
-
-  const roomLeft = telemetry["ahu/telemetry/roomLeft"] as any;
-  const roomRight = telemetry["ahu/telemetry/roomRight"] as any;
-  const flow = telemetry["ahu/telemetry/release_flow"] as any;
-  
-  // Use _localTs because .ts is the ESP's uptime which cannot be compared to Date.now()
-  const isRoomOnline = (roomLeft && (Date.now() - roomLeft._localTs < 15000)) || 
-                       (roomRight && (Date.now() - roomRight._localTs < 15000)) ||
-                       (flow && (Date.now() - flow._localTs < 15000));
+  const { isConnected } = useTelemetry();
 
   return (
     <footer className="h-8 bg-slate-950 border-t border-slate-800 flex items-center justify-between px-4 shrink-0 z-50 text-[11px] font-mono text-slate-400 tracking-wider">
       <div className="flex items-center gap-6">
-        
+
         {isConnected ?
-        <div className="flex items-center gap-2">
-          <FaServer className="text-green-500" />
-          <span>SERVER: CONNECTED</span>
-        </div>
-        :
-        <div className="flex items-center gap-2">
-          <FaServer className="text-rose-500" />
-          <span >SERVER: DISCONNECTED</span>
-        </div>
+          <div className="flex items-center gap-2">
+            <FaServer className="text-green-500" />
+            <span>SERVER: CONNECTED</span>
+          </div>
+          :
+          <div className="flex items-center gap-2">
+            <FaServer className="text-rose-500" />
+            <span >SERVER: DISCONNECTED</span>
+          </div>
         }
 
-        {systemStatus.online ? 
+        {isConnected ?
           <div className="flex items-center gap-2 text-green-500">
             <FaCircle className="animate-pulse text-[8px]" />
             <span>MAIN NODE ONLINE</span>
           </div>
-        :
+          :
           <div className="flex items-center gap-2 text-rose-500">
             <FaCircle className="animate-pulse text-[8px]" />
             <span>MAIN NODE OFFLINE</span>
           </div>
         }
 
-        {isRoomOnline ? 
-          <div className="flex items-center gap-2 text-green-500">
-            <FaCircle className="animate-pulse text-[8px]" />
-            <span>ROOM NODE ONLINE</span>
-          </div>
-        :
-          <div className="flex items-center gap-2 text-rose-500">
-            <FaCircle className="animate-pulse text-[8px]" />
-            <span>ROOM NODE OFFLINE</span>
-          </div>
-        }
+
 
         <div className="flex items-center gap-2">
           <FaCodeBranch className="text-slate-500" />
@@ -74,7 +55,7 @@ const Taskbar = () => {
           <FaExclamationTriangle />
           <span>ALARMS: 0</span>
         </div>
-        <span>UPTIME: {formatUptime(systemStatus.uptime)}</span>
+        <span>UPTIME: 00:00:00</span>
       </div>
     </footer>
   );

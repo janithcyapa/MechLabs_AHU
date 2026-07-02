@@ -5,9 +5,10 @@ import { GiValve, GiSnowflake2, GiHotSurface, GiWaterDrop } from 'react-icons/gi
 import { ToggleSwitch ,ControlKnob } from './ControlKnob';
 import SetpointInput from './SetPoint';
 import { useTelemetry } from '../../utils/TelemetryContext'; 
+import { dummyActuators as actuators } from '../../utils/dummyData';
 
 const SystemControllerPanel = () => {
-  const { actuators, sendCommand } = useTelemetry();
+  const { sendCommand } = useTelemetry();
   const [mode, setMode] = useState<'manual' | 'auto' | 'custom'>('manual');
 
   // Dynamic Rooms Setup (You can pass this array length via props later)

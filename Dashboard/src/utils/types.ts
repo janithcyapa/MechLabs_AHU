@@ -10,10 +10,7 @@ export interface SensorData {
 export type TelemetryState = Record<string, SensorData>;
 
 export interface TelemetryContextType {
-    telemetry: TelemetryState;
-    hvacData: HVACSystemData;
-    actuators: ControlSignals | null;
-    systemStatus: { online: boolean; roomOnline: boolean; uptime: number };
+    rawJson: any;
     sendCommand: (topic: string, payload: any) => void;
     isConnected: boolean;
 }

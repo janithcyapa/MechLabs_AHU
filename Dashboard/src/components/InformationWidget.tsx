@@ -1,14 +1,13 @@
 import { FaThermometerHalf, FaWind } from 'react-icons/fa';
 import { WiHumidity } from 'react-icons/wi';
 import { MdOutlineCo2 } from 'react-icons/md';
-import { getCo2Color, getHumColor, getTempColor } from '../../utils/colors';
-import { useTelemetry } from '../../utils/TelemetryContext';
+import { getCo2Color, getHumColor, getTempColor } from '../utils/colors';
+import { dummyHvacData as hvacData } from '../utils/dummyData';
 
-export default function AmbientAirWidget() {
-  const { hvacData } = useTelemetry();
+export default function InformationWidget() {
 
   return (
-    <div 
+    <div
       className="relative flex flex-col justify-center h-16 px-4 min-w-55 rounded-xl shadow-lg overflow-hidden shrink-0"
       style={{
         backgroundImage: `url(/env_bg.jpg)`,
@@ -46,9 +45,9 @@ export default function AmbientAirWidget() {
         <div className="h-3 w-px bg-slate-600/50 mx-1.5"></div>
 
         {/* CO2 */}
-        <div className={`flex items-center gap-0.5 ${getCo2Color(hvacData.ambient.co2||0)}`}>
+        <div className={`flex items-center gap-0.5 ${getCo2Color(hvacData.ambient.co2 || 0)}`}>
           <MdOutlineCo2 className="text-2xl" />
-          <span className="font-mono font-bold text-lg tracking-tighter">{(hvacData.ambient.co2||0).toFixed(0)}</span>
+          <span className="font-mono font-bold text-lg tracking-tighter">{(hvacData.ambient.co2 || 0).toFixed(0)}</span>
         </div>
       </div>
     </div>
