@@ -4,6 +4,7 @@
 #include "StateManager.h"
 #include "esp_log.h"
 #include "sdkconfig.h"
+#include "HardwareUtils.h"
 
 static const char *TAG = "AhuWifiManager";
 extern const int VERBOSE_MODE;
@@ -13,7 +14,7 @@ void AhuWifiManager::wsCommandCallback(const char* payload) {
     StateManager::mergeJson(payload);
 }
 
-void AhuWifiManager::init() {
+bool AhuWifiManager::init() {
     StateManager::set("hub_id", "AHU_MAIN");
     
     ESP_LOGI(TAG, "Starting AHU WiFi AP (SSID: %s)", CONFIG_ESP_WIFI_SSID);
@@ -25,6 +26,9 @@ void AhuWifiManager::init() {
     ESP_LOGI(TAG, "Starting Server...");
     ServerUtil::init();
     ServerUtil::set_cmd_callback(wsCommandCallback);
+    
+    // AHU is AP/Server, it's immediately ready
+    return true;
 }
 
 void AhuWifiManager::broadcastState() {
@@ -54,6 +58,7 @@ void AhuWifiManager::syncTaskLoop(void* arg) {
             if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Broadcasting state (delta=%d): %s", (tick_counter-1)%10 != 0, out);
             ServerUtil::send_ws_data(out);
             free(out);
+            setSystemState(SystemState::SYNC_SUCCESS);
         }
         vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }

@@ -2,7 +2,7 @@
 
 class AhuWifiManager {
 public:
-    static void init();
+    static bool init();
     static void broadcastState();
     static void syncTaskLoop(void* arg);
 

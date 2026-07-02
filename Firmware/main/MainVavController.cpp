@@ -72,10 +72,20 @@ extern "C" void app_main(void) {
   // Initialize Hardware Utilities
   initHardwareUtils();
 
-  // Initialize WiFi Client and WebSocket
-  VavWifiManager::init();
+  // 1. Play startup sequence
+  setSystemState(SystemState::STARTUP);
+  vTaskDelay(pdMS_TO_TICKS(1500)); // Wait for sequence to complete
 
-  // Start Hardware Tasks
+  // 2. Wait for WiFi
+  setSystemState(SystemState::WAIT_WIFI);
+
+  // Initialize WiFi Client and WebSocket
+  if (!VavWifiManager::init()) {
+      setSystemState(SystemState::INIT_ERROR);
+      while(1) { vTaskDelay(pdMS_TO_TICKS(1000)); } // Halt on failure
+  }
+
+  // 3. Start Hardware Tasks
   PcaTask::init();
   InputTask::init();
   OutputTask::init();
@@ -89,8 +99,8 @@ extern "C" void app_main(void) {
   xTaskCreate(VavWifiManager::syncTaskLoop, "SyncTask", SYNC_TASK_STACK,
               (void *)(uintptr_t)SYNC_TASK_FREQ_MS, SYNC_TASK_PRIO, NULL);
 
-  // Play welcome sequence
-  setSystemState(SystemState::WELCOME);
+  // 4. System Ready
+  setSystemState(SystemState::READY);
 
   while (1) {
     vTaskDelay(pdMS_TO_TICKS(1000));

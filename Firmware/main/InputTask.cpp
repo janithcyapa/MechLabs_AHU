@@ -7,6 +7,7 @@
 #include "esp_adc/adc_oneshot.h"
 #include "esp_log.h"
 #include <vector>
+#include "HardwareUtils.h"
 
 static const char* TAG = "InputTask";
 static adc_oneshot_unit_handle_t adc1_handle = NULL;
@@ -89,6 +90,8 @@ void InputTask::taskLoop(void* arg) {
                         if (adc_oneshot_read(handle, map.channel, &raw_val) == ESP_OK) {
                             if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Input [%s] ADC (GPIO %d): %d", input_config[i].state_key, input_config[i].pin, raw_val);
                             StateManager::set(input_config[i].state_key, (double)raw_val);
+                        } else {
+                            setSystemState(SystemState::SENSOR_ERROR);
                         }
                         break;
                     }

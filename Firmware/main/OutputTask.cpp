@@ -7,6 +7,7 @@
 #include "util_pwm.hpp"
 #include "esp_log.h"
 #include <vector>
+#include "HardwareUtils.h"
 
 static const char* TAG = "OutputTask";
 extern const int VERBOSE_MODE;
@@ -62,7 +63,9 @@ void OutputTask::taskLoop(void* arg) {
                 // Treat >0.5 as ON, else OFF
                 int level = target_val > 0.5 ? 1 : 0;
                 if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Output [%s] Relay (GPIO %d): %d", output_config[i].state_key, output_config[i].pin, level);
-                gpio_set_level((gpio_num_t)output_config[i].pin, level);
+                if (gpio_set_level((gpio_num_t)output_config[i].pin, level) != ESP_OK) {
+                    setSystemState(SystemState::SENSOR_ERROR);
+                }
             } 
             else if (output_config[i].type == OutputType::PWM) {
                 // Find matching PWM instance

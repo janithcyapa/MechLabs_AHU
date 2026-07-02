@@ -2,11 +2,13 @@
 
 enum class SystemState {
     IDLE,
-    WELCOME,
-    SUCCESS,
-    ERROR,
-    ALERT,
-    WARNING
+    STARTUP,
+    WAIT_WIFI,
+    INIT_ERROR,
+    READY,
+    SYNC_SUCCESS,
+    SENSOR_ERROR,
+    SYNC_ERROR
 };
 
 void initHardwareUtils();

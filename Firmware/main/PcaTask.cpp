@@ -11,6 +11,7 @@
 #include "esp_log.h"
 #include <stdio.h>
 #include <string.h>
+#include "HardwareUtils.h"
 
 static const char* TAG = "PcaTask";
 extern const int VERBOSE_MODE;
@@ -63,7 +64,10 @@ void PcaTask::taskLoop(void* arg) {
         for (int i = 0; i < 8; i++) {
             if (pca_config[i].type == PcaSensorType::NONE) continue;
             
-            if (pca.select_channel(i) != ESP_OK) continue;
+            if (pca.select_channel(i) != ESP_OK) {
+                setSystemState(SystemState::SENSOR_ERROR);
+                continue;
+            }
             vTaskDelay(pdMS_TO_TICKS(10));
 
             if (pca_config[i].type == PcaSensorType::AHT21_ENS160) {
@@ -77,6 +81,8 @@ void PcaTask::taskLoop(void* arg) {
 
                     // Compensate ENS160
                     ens.set_environment(temp, hum);
+                } else {
+                    setSystemState(SystemState::SENSOR_ERROR);
                 }
                 
                 sens_ens160::Ens160Data ens_data;
@@ -88,6 +94,8 @@ void PcaTask::taskLoop(void* arg) {
                     StateManager::set(key_buf, ens_data.tvoc);
                     snprintf(key_buf, sizeof(key_buf), "%s_c", pca_config[i].name);
                     StateManager::set(key_buf, ens_data.eco2);
+                } else {
+                    setSystemState(SystemState::SENSOR_ERROR);
                 }
             } 
             else if (pca_config[i].type == PcaSensorType::BME280) {
@@ -100,6 +108,8 @@ void PcaTask::taskLoop(void* arg) {
                     StateManager::set(key_buf, bme_data.humidity);
                     snprintf(key_buf, sizeof(key_buf), "%s_p", pca_config[i].name);
                     StateManager::set(key_buf, bme_data.pressure);
+                } else {
+                    setSystemState(SystemState::SENSOR_ERROR);
                 }
             }
             pca.disable_all();

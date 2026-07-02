@@ -3,7 +3,7 @@
 
 class VavWifiManager {
 public:
-    static void init();
+    static bool init();
     static void syncTaskLoop(void* arg);
     
 private:

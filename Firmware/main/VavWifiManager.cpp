@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <string.h>
+#include "HardwareUtils.h"
 
 static const char *TAG = "VavWifiManager";
 static esp_websocket_client_handle_t client = NULL;
@@ -59,24 +60,24 @@ void VavWifiManager::syncTaskLoop(void* arg) {
                 out = StateManager::getDirtyJsonString();
             }
             
-            // if (out) {
-            //     if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Publishing state (delta=%d): %s", (tick_counter-1)%10 != 0, out);
-            //     esp_websocket_client_send_text(client, out, strlen(out), pdMS_TO_TICKS(500));
-            //     free(out);
-            // }
+            if (out) {
+                if (VERBOSE_MODE >= 2) ESP_LOGI(TAG, "Publishing state (delta=%d): %s", (tick_counter-1)%10 != 0, out);
+                esp_websocket_client_send_text(client, out, strlen(out), pdMS_TO_TICKS(500));
+                free(out);
+                setSystemState(SystemState::SYNC_SUCCESS);
+            }
+        } else {
+            setSystemState(SystemState::SYNC_ERROR);
         }
         vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }
 
-void VavWifiManager::init() {
+bool VavWifiManager::init() {
     StateManager::set("vav_id", "ZONE_01");
     
     ESP_LOGI(TAG, "Connecting to AHU Hotspot (SSID: %s)", CONFIG_ESP_WIFI_SSID);
     WifiUtil::init_wifi(CONFIG_ESP_WIFI_SSID, CONFIG_ESP_WIFI_PASSWORD);
-    
-    // Wait for WiFi connection (using simple delay for POC)
-    vTaskDelay(pdMS_TO_TICKS(5000));
     
     ESP_LOGI(TAG, "Connecting to WebSocket Server at ws://192.168.4.1/ws");
     
@@ -86,4 +87,12 @@ void VavWifiManager::init() {
     client = esp_websocket_client_init(&websocket_cfg);
     esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, (esp_event_handler_t)websocketEventHandler, (void *)client);
     esp_websocket_client_start(client);
+
+    // Wait indefinitely for connection
+    while (!esp_websocket_client_is_connected(client)) {
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+    
+    ESP_LOGI(TAG, "Successfully connected to Hub WebSocket!");
+    return true;
 }

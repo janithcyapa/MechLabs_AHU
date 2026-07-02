@@ -34,14 +34,15 @@ const uint32_t SYNC_TASK_STACK = 4096;
 const UBaseType_t SYNC_TASK_PRIO = 5;
 
 // --- AHU Configuration ---
-const PcaChannelConfig pca_config[8] = {{PcaSensorType::AHT21_ENS160, "mixed"},
-                                        {PcaSensorType::BME280, "cooled"},
-                                        {PcaSensorType::BME280, "heated"},
-                                        {PcaSensorType::NONE, ""},
-                                        {PcaSensorType::NONE, ""},
-                                        {PcaSensorType::NONE, ""},
-                                        {PcaSensorType::NONE, ""},
-                                        {PcaSensorType::NONE, ""}};
+const PcaChannelConfig pca_config[8] = {
+    // {PcaSensorType::AHT21_ENS160, "mixed"},
+    // {PcaSensorType::BME280, "cooled"},
+    // {PcaSensorType::BME280, "heated"},
+    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
+    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
+    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""},
+    {PcaSensorType::NONE, ""}, {PcaSensorType::NONE, ""}
+  };
 
 const InputPinConfig input_config[] = {
     // {InputType::NONE, 0, ""},
@@ -70,13 +71,25 @@ extern "C" void app_main(void) {
   StateManager::init();
   i2c_util::i2c_init();
 
-  // Initialize Hardware Utilities (LED & Buzzer)
+  // Initialize Hardware Utilities
   initHardwareUtils();
 
-  // Initialize WiFi Hotspot and WebSocket Server
-  AhuWifiManager::init();
+  // 1. Play startup sequence
+  setSystemState(SystemState::STARTUP);
+  vTaskDelay(pdMS_TO_TICKS(1500)); // Wait for sequence to complete
 
-  // Start Hardware Tasks
+  // 2. Wait for WiFi (AP Creation)
+  setSystemState(SystemState::WAIT_WIFI);
+
+  // Initialize WiFi Client and WebSocket
+  if (!AhuWifiManager::init()) {
+    setSystemState(SystemState::INIT_ERROR);
+    while (1) {
+      vTaskDelay(pdMS_TO_TICKS(1000));
+    } // Halt on failure
+  }
+
+  // 3. Start Hardware Tasks
   PcaTask::init();
   InputTask::init();
   OutputTask::init();
@@ -90,8 +103,8 @@ extern "C" void app_main(void) {
   xTaskCreate(AhuWifiManager::syncTaskLoop, "SyncTask", SYNC_TASK_STACK,
               (void *)(uintptr_t)SYNC_TASK_FREQ_MS, SYNC_TASK_PRIO, NULL);
 
-  // Play welcome sequence
-  setSystemState(SystemState::WELCOME);
+  // 4. System Ready
+  setSystemState(SystemState::READY);
 
   while (1) {
     vTaskDelay(pdMS_TO_TICKS(1000));

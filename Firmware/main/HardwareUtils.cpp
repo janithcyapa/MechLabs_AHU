@@ -23,7 +23,7 @@ static bool toggleState = false;
 #define LEDC_CHANNEL_B LEDC_CHANNEL_2
 #define LEDC_CHANNEL_BUZZER LEDC_CHANNEL_3
 
-static void setOutputs(uint32_t r, uint32_t g, uint32_t b, bool buzzerOn) {
+static void setOutputs(uint32_t r, uint32_t g, uint32_t b, bool buzzerOn, uint32_t buzzerFreq = 2000) {
   ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_R, r);
   ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_R);
   ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_G, g);
@@ -31,8 +31,12 @@ static void setOutputs(uint32_t r, uint32_t g, uint32_t b, bool buzzerOn) {
   ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_B, b);
   ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_B);
 
-  ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_BUZZER,
-                buzzerOn ? (LEDC_MAX_DUTY / 2) : 0);
+  if (buzzerOn) {
+      ledc_set_freq(LEDC_MODE, LEDC_TIMER_1, buzzerFreq);
+      ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_BUZZER, (LEDC_MAX_DUTY / 2));
+  } else {
+      ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_BUZZER, 0);
+  }
   ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_BUZZER);
 }
 
@@ -41,50 +45,80 @@ static void stateTimerCallback(TimerHandle_t xTimer) {
   toggleState = !toggleState;
 
   switch (currentState) {
-  case SystemState::ERROR:
-    // 2Hz means toggle every 250ms
+  case SystemState::STARTUP:
+    // Green blink + ascending welcome tone
+    if (toggleCount == 1) {
+      setOutputs(0, 255, 0, true, 523); // C5
+    } else if (toggleCount == 2) {
+      setOutputs(0, 255, 0, true, 659); // E5
+    } else if (toggleCount == 3) {
+      setOutputs(0, 255, 0, true, 784); // G5
+    } else if (toggleCount == 4) {
+      setOutputs(0, 255, 0, true, 1047); // C6
+    } else if (toggleCount >= 5) {
+      setOutputs(0, 0, 0, false);
+      setSystemState(SystemState::IDLE); // Ends sequence
+    }
+    break;
+
+  case SystemState::WAIT_WIFI:
+    // Solid Yellow, no beep
+    setOutputs(255, 128, 0, false);
+    xTimerStop(stateTimer, 0); // No need to toggle
+    break;
+
+  case SystemState::READY:
+    // Solid Green, no beep
+    setOutputs(0, 255, 0, false);
+    xTimerStop(stateTimer, 0);
+    break;
+
+  case SystemState::INIT_ERROR:
+    // Blink Red + Buzz continuously (Wait for watchdog or reset)
     if (toggleState) {
-      setOutputs(255, 0, 0, true);
+      setOutputs(255, 0, 0, true, 150); // Harsh low buzz for critical error
     } else {
       setOutputs(0, 0, 0, false);
     }
     break;
-  case SystemState::ALERT:
-    // Fast toggle red/blue
-    if (toggleState) {
-      setOutputs(255, 0, 0, true);
-    } else {
+
+  case SystemState::SYNC_SUCCESS:
+    // Turn Blue, short high beep, back to READY
+    if (toggleCount == 1) {
+      setOutputs(0, 0, 255, true, 2093); // C7 - high pleasant ping
+    } else if (toggleCount == 2) {
       setOutputs(0, 0, 255, false);
+    } else if (toggleCount >= 3) {
+      setSystemState(SystemState::READY);
     }
     break;
-  case SystemState::SUCCESS:
+
+  case SystemState::SENSOR_ERROR:
+    // Turn Red, mid-low warning beep once, back to READY
     if (toggleCount == 1) {
-      setOutputs(0, 255, 0, true); // Green and Beep
+      setOutputs(255, 0, 0, true, 300); // 300Hz warning beep
     } else if (toggleCount == 2) {
-      setOutputs(0, 255, 0, false); // Green, stop beep
-    } else if (toggleCount >= 4) {
-      setSystemState(SystemState::IDLE); // Play once and stop
+      setOutputs(255, 0, 0, false);
+    } else if (toggleCount >= 3) {
+      setSystemState(SystemState::READY);
     }
     break;
-  case SystemState::WARNING:
+
+  case SystemState::SYNC_ERROR:
+    // Blink red twice, descending double beep, back to READY
     if (toggleCount == 1) {
-      setOutputs(255, 128, 0, true); // Yellow
+      setOutputs(255, 0, 0, true, 400); // Higher tone
     } else if (toggleCount == 2) {
-      setOutputs(255, 128, 0, false); // Yellow, stop beep
-    } else if (toggleCount >= 6) {
-      setSystemState(SystemState::IDLE);
+      setOutputs(0, 0, 0, false);
+    } else if (toggleCount == 3) {
+      setOutputs(255, 0, 0, true, 250); // Lower tone
+    } else if (toggleCount == 4) {
+      setOutputs(0, 0, 0, false);
+    } else if (toggleCount >= 5) {
+      setSystemState(SystemState::READY);
     }
     break;
-  case SystemState::WELCOME:
-    if (toggleCount == 1)
-      setOutputs(0, 255, 0, true);
-    else if (toggleCount == 2)
-      setOutputs(0, 255, 0, false);
-    else if (toggleCount == 3)
-      setOutputs(0, 0, 255, true);
-    else if (toggleCount >= 4)
-      setSystemState(SystemState::IDLE);
-    break;
+
   case SystemState::IDLE:
   default:
     setOutputs(0, 0, 0, false);
