@@ -1,9 +1,9 @@
 set(BUILD_ROOM_NODE OFF) # Change to ON to build the room sensor node firmware
 
 if(BUILD_ROOM_NODE)
-    set(SRC_FILES "room_main.cpp")
+    set(SRC_FILES "Vav_Controller.cpp")
 else()
-    set(SRC_FILES "main.cpp")
+    set(SRC_FILES "AHU_Hub.cpp")
 endif()
 
 idf_component_register(

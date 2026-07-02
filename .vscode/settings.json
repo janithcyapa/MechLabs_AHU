@@ -1,8 +1,17 @@
 {
-    "idf.currentSetup": "/home/jazz/.espressif/v6.0/esp-idf",
-    "idf.port": "/dev/ttyUSB0",
-    "idf.buildPath": "${workspaceFolder}/AHU_Firmware/build",
-    "idf.sdkconfigFilePath": "${workspaceFolder}/AHU_Firmware/sdkconfig",
-    "cmake.sourceDirectory": "/home/jazz/Projects/MechLabs_AHU/AHU_Firmware/main",
-    "idf.flashType": "UART",
+  "idf.currentSetup": "/home/jazz/.espressif/v6.0/esp-idf",
+  "idf.buildPath": "${workspaceFolder}/Firmware/build",
+  "cmake.sourceDirectory": "${workspaceFolder}/Firmware",
+  "cmake.buildDirectory": "${workspaceFolder}/Firmware/build",
+  "idf.customExtraVars": {},
+  "clangd.path": "/home/jazz/.espressif/tools/esp-clang/esp-20.1.1_20250829/esp-clang/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=/home/jazz/Projects/MechLabs_AHU/Firmware/build"
+  ],
+  "idf.flashType": "UART",
+  "idf.openOcdConfigs": [
+    "board/esp32-wrover-kit-3.3v.cfg"
+  ]
 }

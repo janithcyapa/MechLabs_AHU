@@ -1,0 +1,77 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ESP-IDF Build",
+      "type": "shell",
+      "command": "idf.py",
+      "args": [
+        "-C",
+        "${workspaceFolder}/Firmware",
+        "-B",
+        "${workspaceFolder}/Firmware/build",
+        "build"
+      ],
+      "options": {
+        "env": {
+          "IDF_PATH": "/home/jazz/.espressif/v6.0/esp-idf"
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ESP-IDF Flash",
+      "type": "shell",
+      "command": "idf.py",
+      "args": [
+        "-C",
+        "${workspaceFolder}/Firmware",
+        "-B",
+        "${workspaceFolder}/Firmware/build",
+        "flash"
+      ],
+      "options": {
+        "env": {
+          "IDF_PATH": "/home/jazz/.espressif/v6.0/esp-idf"
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ESP-IDF Monitor",
+      "type": "shell",
+      "command": "idf.py",
+      "args": [
+        "-C",
+        "${workspaceFolder}/Firmware",
+        "-B",
+        "${workspaceFolder}/Firmware/build",
+        "monitor"
+      ],
+      "options": {
+        "env": {
+          "IDF_PATH": "/home/jazz/.espressif/v6.0/esp-idf"
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
